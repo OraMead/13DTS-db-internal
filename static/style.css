@@ -1,0 +1,142 @@
+* {
+    font-family: 'Manrope', sans-serif;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #f1f1f1;
+}
+
+.container {
+    width: 60vw;
+    margin: auto;
+}
+
+.container::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+h1 {
+    text-align: center;
+    font-weight: 200;
+    font-size: 4rem;
+    margin: 0;
+}
+
+h2 {
+    font-size: 2rem;
+    text-align: center;
+    margin: 0 0 0.5rem 0;
+}
+
+nav {
+    background-color: #f1f1f1;
+    color: #353535;
+    text-align: center;
+    font-size: 1.5rem;
+    padding-top: 0.4rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid #b1b1b1;
+}
+
+.navbar-brand {
+    display: inline;
+    float: left;
+}
+
+.navbar-links {
+    display: inline;
+    float: right;
+}
+
+a {
+    font-size: 1rem;
+    color: blue;
+    text-decoration: none;
+}
+
+a:hover {
+    border-bottom: 0.1rem solid blue;
+}
+
+nav a {
+    padding: 0 0.5rem;
+    font-size: 1.5rem;
+    color: #353535;
+}
+
+nav a:hover {
+    border-bottom: 3px solid #353535;
+}
+
+.tutorials {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+    border: 1px solid #b1b1b1;
+    border-radius: 0.4rem;
+    padding: 1rem;
+}
+
+.tutorial-box {
+    background-color: #f1f1f1;
+    width: 32%;
+    border: 1px solid #b1b1b1;
+    border-radius: 0.4rem;
+    color: #353535;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+}
+
+.tutorial-box-subject {
+    padding: 0.5rem;
+}
+
+.tutorial-box h3 {
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+.tutorial-box p {
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+}
+
+.myform {
+    width: 80%;
+    margin: auto;
+    padding-top: 3rem;
+}
+
+.form-group {
+    padding-top: 3rem;
+}
+
+.form-label {
+    width: 30%;
+    float: left;
+    padding: 0.3rem;
+}
+
+.form-element {
+    width: 70%;
+    float: left;
+}
+
+.button-group {
+    margin-top: 3rem;
+    text-align: center;
+}
+
+.button-group input {
+    padding: 0.3rem;
+}
+
+.form-group input {
+    padding: 0.3rem;
+    width: 100%;
+}

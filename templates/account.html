@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block pageheading %}
+<h2>account</h2>
+{% endblock %}
+
+{% block main %}
+<strong>Welcome {{ session.firstname }} {{ session.lastname }}</strong>
+<div>
+    <h3>My bookings</h3>
+    {% if bookings|length > 0 %}
+    <div class="tutorials">
+        {% for tutorial in bookings %}
+        <div class="tutorial-box">
+            <h3 class="tutorial-box-subject">{{ tutorial[0] }}</h3>
+            <p><strong>Year Level: </strong>{{ tutorial[1] }}</p>
+            <p><strong>Time:</strong> {{ tutorial[2] }}</p>
+            <p><strong>Day:</strong> {{ tutorial[7] }}</p>
+            <p><strong>Location:</strong> {{ tutorial[3] }}</p>
+            <p><strong>Tutor:</strong> {{ tutorial[4] }} {{ tutorial[5] }}</p>
+            <a href="/detail/{{ tutorial[6] }}">View Details</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>No bookings to show</p>
+    {% endif %}
+</div>
+{% if session.tutor == 1 %}
+<div>
+    <h3>My classes</h3>
+    {% if classes|length > 0 %}
+    <div class="tutorials">
+        {% for tutorial in classes %}
+        <div class="tutorial-box">
+            <h3 class="tutorial-box-subject">{{ tutorial[0] }}</h3>
+            <p><strong>Year Level: </strong>{{ tutorial[1] }}</p>
+            <p><strong>Time:</strong> {{ tutorial[2] }}</p>
+            <p><strong>Day:</strong> {{ tutorial[7] }}</p>
+            <p><strong>Location:</strong> {{ tutorial[3] }}</p>
+            <p><strong>Tutee:</strong> {{ tutorial[4] }} {% if tutorial[5] != none %}{{ tutorial[5] }}{% endif %}</p>
+            <a href="/detail/{{ tutorial[6] }}">View Details</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>No classes to show</p>
+    {% endif %}
+    <a href="/create">Create session</a>
+</div>
+{% endif %}
+{% endblock %}

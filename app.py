@@ -54,16 +54,16 @@ def render_home():
     return render_template('index.html', title='home', logged_in=is_logged_in())
 
 
-@app.route('/tutorial/')
-def render_tutorials():
-    tutorial_list = fetch('''SELECT subject.name, tutorial.level, tutorial.time, tutorial.location, user.fname, user.lname, tutorial.tutorial_id, tutorial.day
-                            FROM ((tutorial
-                            JOIN user ON tutorial.fk_tutor_id = user.user_id)
-                            JOIN subject ON tutorial.fk_subject_id = subject.subject_id)
-                            WHERE tutorial.fk_tutee_id IS NULL
-                            ORDER BY subject.name, tutorial.day, tutorial.time''')
+@app.route('/about')
+def render_about():
+    return render_template('about.html', title='about', logged_in=is_logged_in())
 
-    return render_template('tutorial.html', title='tutorials', logged_in=is_logged_in(), tutorials=tutorial_list)
+
+@app.route('/dashboard')
+def render_dashboard():
+    if not is_logged_in():
+        return redirect('/')
+    return render_template('dashboard.html', title='dashboard', logged_in=is_logged_in())
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -127,35 +127,6 @@ def render_signup_page():
     return render_template('signup.html', title='signup', logged_in=is_logged_in())
 
 
-@app.route('/create', methods=['GET', 'POST'])
-def render_create():
-    if not is_logged_in():
-        return redirect('/account?error=not+logged+in')
-    if session['tutor'] != 1:
-        return redirect('/account?error=not+tutor')
-    
-    subject_list = fetch('SELECT subject_id, name FROM subject')
-
-    if request.method == 'POST':
-        subject = request.form.get('subject')
-        location = request.form.get('location').strip()
-        time = request.form.get('time')
-        description = request.form.get('description')
-        level = request.form.get('level')
-        day = request.form.get('day')
-
-        insert('''INSERT INTO tutorial(tutorial_id, fk_subject_id, fk_tutor_id, location, time, fk_tutor_id, description, level, day)
-               VALUES(NULL,?,?,?,?,NULL,?,?,?)''',
-               (subject, session['userid'], location, time, description, level, day),
-               '/create?error=failed+creating+session')
-
-        return redirect('/account')
-    
-    return render_template('create.html', title='create', logged_in=is_logged_in(), subjects=subject_list)
-    
-    
-
-
 @app.route('/logout')
 def logout():
     [session.pop(key) for key in list(session.keys())]
@@ -166,89 +137,9 @@ def logout():
 def render_account():
     if not is_logged_in():
         return redirect('/')
-    booking_list = fetch('''SELECT subject.name, tutorial.level, tutorial.time, tutorial.location, user.fname, user.lname, tutorial.tutorial_id, tutorial.day
-                            FROM ((tutorial
-                            JOIN user ON tutorial.fk_tutor_id = user.user_id)
-                            JOIN subject ON tutorial.fk_subject_id = subject.subject_id)
-                            WHERE tutorial.fk_tutee_id=?
-                            ORDER BY tutorial.day, tutorial.time;''',
-                            (session['userid'], ))
-    if session['tutor'] == 1:
-        class_list = fetch('''SELECT subject.name, tutorial.level, tutorial.time, tutorial.location, user.fname, user.lname, tutorial.tutorial_id, tutorial.day
-                            FROM ((tutorial
-                            JOIN subject ON tutorial.fk_subject_id = subject.subject_id)
-                            LEFT JOIN user ON tutorial.fk_tutee_id = user.user_id)
-                            WHERE tutorial.fk_tutor_id=?
-                            ORDER BY tutorial.day, tutorial.time;''',
-                            (session['userid'], ))
-    else:
-        class_list = None
+    user_list = fetch('SELECT fname, lname FROM user WHERE user_id=?;', (session['userid'], ))
 
-    return render_template('account.html', title='account', logged_in=is_logged_in(), bookings=booking_list, classes=class_list)
-
-
-@app.route('/detail/<tutorial_id>')
-def render_detail(tutorial_id):
-    detail_list = fetch('''SELECT subject.name, tutorial.description, tutorial.level, tutorial.time, tutorial.location, user.fname, user.lname, tutorial.tutorial_id, tutorial.fk_tutor_id, tutorial.fk_tutee_id, tutorial.day
-                            FROM ((tutorial
-                            JOIN user ON tutorial.fk_tutor_id = user.user_id)
-                            JOIN subject ON tutorial.fk_subject_id = subject.subject_id)
-                            WHERE tutorial.tutorial_id=?''',
-                            (tutorial_id, ))
-    
-    if detail_list[0][9] is not None:
-        try:
-            if session['userid'] != detail_list[0][8] and session['userid'] != detail_list[0][9]:
-                return redirect('/tutorial?error=invalid+account')
-        except IndexError:
-            return redirect('/tutorial?error=not+logged+in')
-
-    return render_template('detail.html', title='detail', logged_in=is_logged_in(), detail=detail_list)
-
-
-@app.route('/book/<tutorial_id>')
-def book(tutorial_id):
-    detail_list = fetch('SELECT fk_tutor_id, fk_tutee_id FROM tutorial WHERE tutorial_id=?;', (tutorial_id, ))
-    if not is_logged_in():
-        return redirect(f'/detail/{tutorial_id}?error=not+logged+in')
-    if detail_list[0][1] is not None:
-        return redirect(f'/detail/{tutorial_id}?error=tutorial+already+booked')
-    if detail_list[0][0] == session['userid']:
-        return redirect(f'/detail/{tutorial_id}?error=user+is+tutor')
-    
-    insert('UPDATE tutorial SET fk_tutee_id=? WHERE tutorial_id=?;', (session['userid'], tutorial_id))
-
-    return redirect('/account')
-
-
-@app.route('/cancel/<tutorial_id>')
-def cancel(tutorial_id):
-    detail_list = fetch('SELECT fk_tutor_id, fk_tutee_id FROM tutorial WHERE tutorial_id=?;', (tutorial_id, ))
-    if not is_logged_in():
-        return redirect(f'/detail/{tutorial_id}?error=not+logged+in')
-    if detail_list[0][1] is None:
-        return redirect(f'/detail/{tutorial_id}?error=tutorial+not+booked')
-    if detail_list[0][0] == session['userid']:
-        return redirect(f'/detail/{tutorial_id}?error=user+is+tutor')
-    
-    insert('UPDATE tutorial SET fk_tutee_id=null WHERE tutorial_id=?;', (tutorial_id, ))
-
-    return redirect('/account')
-
-
-@app.route('/delete/<tutorial_id>')
-def delete(tutorial_id):
-    detail_list = fetch('SELECT fk_tutor_id, fk_tutee_id FROM tutorial WHERE tutorial_id=?;', (tutorial_id, ))
-    if not is_logged_in():
-        return redirect(f'/detail/{tutorial_id}?error=not+logged+in')
-    if detail_list[0][1] is not None:
-        return redirect(f'/detail/{tutorial_id}?error=tutorial+booked')
-    if detail_list[0][0] != session['userid']:
-        return redirect(f'/detail/{tutorial_id}?error=user+is+not+tutor')
-    
-    insert('DELETE FROM tutorial WHERE tutorial_id=?;', (tutorial_id, ))
-
-    return redirect('/account')
+    return render_template('account.html', title='account', logged_in=is_logged_in())
 
 
 if __name__ == '__main__':

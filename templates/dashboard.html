@@ -14,7 +14,11 @@
     {% for note in notes %}
         <div class="note-box">
             <h3 class="note-title">{{ note[0] }}</h3>
-            <p>{{ note[1] }}</p>
+            <p><strong>{{ note[1] }}</strong></p>
+            <p>{{ note[2] }}</p>
+            {% for tag in note[3] %}
+            <p>{{ tag }}</p>
+            {% endfor %}
         </div>
     {% endfor %}
     </div>

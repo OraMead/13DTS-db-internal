@@ -64,17 +64,26 @@ def render_dashboard():
     if not is_logged_in():
         return redirect('/')
     
-    notes_list = fetch('SELECT note.title, note.content, subject.name '
-    'FROM note JOIN subject ON note.fk_subject_id = subject.subject_id WHERE note.fk_user_id=?', 
-    (session['userid'], ))
+    notes_list = fetch('''SELECT 
+                            n.title,
+                            s.name,
+                            n.content,
+                            GROUP_CONCAT(t.name, '☭') AS tags
+                       FROM note n
+                       JOIN subject s ON n.fk_subject_id = s.subject_id
+                       LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
+                       LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
+                       WHERE n.fk_user_id = ?
+                       GROUP BY n.note_id, n.title, s.name, n.content''', 
+                       (session['userid'], ))
 
     for i, note in enumerate(notes_list):
-        file_path = f"user_data/{session['userid']}/notes/{note[1]}"
+        file_path = f"user_data/{session['userid']}/notes/{note[2]}"
         
         with open(file_path, 'r') as f:
             content = f.read()
         
-        notes_list[i] = (note[0], content[:150] + '...', note[2])
+        notes_list[i] = (note[0],  note[1], content[:150] + '...', tuple(note[3].split('☭')))
 
 
     return render_template('dashboard.html', title='dashboard', logged_in=is_logged_in(), notes=notes_list)

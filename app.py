@@ -63,7 +63,21 @@ def render_about():
 def render_dashboard():
     if not is_logged_in():
         return redirect('/')
-    return render_template('dashboard.html', title='dashboard', logged_in=is_logged_in())
+    
+    notes_list = fetch('SELECT note.title, note.content, subject.name '
+    'FROM note JOIN subject ON note.fk_subject_id = subject.subject_id WHERE note.fk_user_id=?', 
+    (session['userid'], ))
+
+    for i, note in enumerate(notes_list):
+        file_path = f"user_data/{session['userid']}/notes/{note[1]}"
+        
+        with open(file_path, 'r') as f:
+            content = f.read()
+        
+        notes_list[i] = (note[0], content[:150] + '...', note[2])
+
+
+    return render_template('dashboard.html', title='dashboard', logged_in=is_logged_in(), notes=notes_list)
 
 
 @app.route('/login', methods=['GET', 'POST'])

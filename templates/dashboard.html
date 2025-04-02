@@ -5,5 +5,30 @@
 {% endblock %}
 
 {% block main %}
+<div class="note-group">
+    <h3>My notes</h3>
+    <div class="notes">
+        <div class="note-box">
+            <h3 class="note-box-title">New</h3>
+        </div>
+    {% for note in notes %}
+        <div class="note-box">
+            <h3 class="note-title">{{ note[0] }}</h3>
+            <p>{{ note[1] }}</p>
+        </div>
+    {% endfor %}
+    </div>
+</div>
 
+<div class="note-group">
+    <h3>Shared with me</h3>
+    <div class="notes">
+    {% for note in shared %}
+        <div class="note-box">
+            <h3 class="note-box-title">{{ note[0] }}</h3>
+            <p>{{ note[1] }}</p>
+        </div>
+    {% endfor %}
+    </div>
+</div>
 {% endblock %}

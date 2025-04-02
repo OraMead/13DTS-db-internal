@@ -73,16 +73,19 @@ nav a:hover {
     border-bottom: 3px solid #353535;
 }
 
-.tutorials {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-evenly;
+.note-group {
     border: 1px solid #b1b1b1;
     border-radius: 0.4rem;
     padding: 1rem;
 }
 
-.tutorial-box {
+.notes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+}
+
+.note-box {
     background-color: #f1f1f1;
     width: 32%;
     border: 1px solid #b1b1b1;
@@ -92,16 +95,16 @@ nav a:hover {
     padding: 0.5rem;
 }
 
-.tutorial-box-subject {
+.note-box-title {
     padding: 0.5rem;
 }
 
-.tutorial-box h3 {
+.note-box h3 {
     font-size: 1.2rem;
     text-align: center;
 }
 
-.tutorial-box p {
+.note-box p {
     font-size: 0.8rem;
     margin-bottom: 0.3rem;
 }

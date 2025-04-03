@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <title>not3s | {{ title }}</title>
+        <title>Unnamed Note Website | {{ title }}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css"/>
         <link href="/static/style.css" rel="stylesheet">
@@ -10,16 +10,16 @@
     <body>
         <nav>
             <div class="container">
-                <div class="navbar-brand">myTutor</div>
+                <div class="navbar-brand">Unnamed Note Website</div>
                 <div class="navbar-links">
-                    <a href="/">home</a>
-                    <a href="/about">about</a>
+                    <a href="/">Home</a>
+                    <a href="/about">About</a>
                     {% if logged_in %}
-                    <a href="/dashboard">dashboard</a>
-                    <a href="/account">account</a>
-                    <a href="/logout">logout</a>
+                    <a href="/dashboard">Dashboard</a>
+                    <a href="/account">Account</a>
+                    <a href="/logout">Logout</a>
                     {% else %}
-                    <a href="/login">login</a>
+                    <a href="/login">Login</a>
                     {% endif %}
                 </div>
             </div>

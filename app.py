@@ -68,7 +68,20 @@ def render_dashboard():
                             n.title,
                             s.name,
                             n.content,
-                            GROUP_CONCAT(t.name, '☭') AS tags
+                            GROUP_CONCAT(t.name, ', ') AS tags
+                       FROM note n
+                       JOIN subject s ON n.fk_subject_id = s.subject_id
+                       LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
+                       LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
+                       WHERE n.fk_user_id = ?
+                       GROUP BY n.note_id, n.title, s.name, n.content''', 
+                       (session['userid'], ))
+    
+    shared_list = fetch('''SELECT 
+                            n.title,
+                            s.name,
+                            n.content,
+                            GROUP_CONCAT(t.name, ', ') AS tags
                        FROM note n
                        JOIN subject s ON n.fk_subject_id = s.subject_id
                        LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
@@ -83,10 +96,18 @@ def render_dashboard():
         with open(file_path, 'r') as f:
             content = f.read()
         
-        notes_list[i] = (note[0],  note[1], content[:150] + '...', tuple(note[3].split('☭')))
+        notes_list[i] = (note[0],  note[1], content[:150] + '...', tuple(note[3].split(', ')))
+    
+    for i, note in enumerate(shared_list):
+        file_path = f"user_data/{session['userid']}/notes/{note[2]}"
+        
+        with open(file_path, 'r') as f:
+            content = f.read()
+        
+        shared_list[i] = (note[0],  note[1], content[:150] + '...', tuple(note[3].split(', ')), 'Ora Mead')
 
 
-    return render_template('dashboard.html', title='dashboard', logged_in=is_logged_in(), notes=notes_list)
+    return render_template('dashboard.html', title='dashboard', logged_in=is_logged_in(), notes=notes_list, shared=shared_list)
 
 
 @app.route('/login', methods=['GET', 'POST'])

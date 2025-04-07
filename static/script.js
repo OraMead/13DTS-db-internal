@@ -13,3 +13,12 @@ document.querySelectorAll('.modal').forEach(modal => {
         }
     });
 });
+
+document.getElementById('subject-select').addEventListener('change', function() {
+    var value = this.value;
+    if (value === 'add-new') {
+        document.getElementById('new-subject-container').style.display = 'block';
+    } else {
+        document.getElementById('new-subject-container').style.display = 'none';
+    }
+});

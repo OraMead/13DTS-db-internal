@@ -18,12 +18,17 @@
             <div class="form-group">
                 <div class="form-label">Subject</div>
                 <div class="form-element">
-                    <select name="subject" required>
+                    <select name="subject" id="subject-select" required>
                         <option disabled selected value> -- select an option -- </option>
                         {% for subject in subjects %}
                         <option value="{{ subject[0] }}">{{ subject[1] }}</option>
                         {% endfor %}
+                        <option value="add-new">Add new subject</option>
                     </select>
+                    <div id="new-subject-container" style="display: none;">
+                        <input type="text" id="new-subject-name" placeholder="Enter new subject" required>
+                        <button type="button" onclick="addNewSubject()">Add Subject</button>
+                    </div>
                 </div>
             </div>
             <input type="file" name="file" accept=".txt">
@@ -36,7 +41,7 @@
 </div>
 
 <div class="note-group">
-    <h3>My notes</h3>
+    <h3>Recent notes</h3>
     <div class="notes">
     {% for note in notes %}
         <div class="note-box">
@@ -66,7 +71,7 @@
                 <li>{{ tag }}</li>
                 {% endfor %}
             </ul>
-            <p>{{ note[4] }}</p>
+            <p><strong>Shared by:</strong> {{ note[4] }}</p>
         </div>
     {% endfor %}
     </div>

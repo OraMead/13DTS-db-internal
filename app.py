@@ -59,6 +59,28 @@ def fetch(query: str, arguments: tuple=()):
     return data
 
 
+def process_note(note):
+    file_path = f'uploads/{note[2]}'
+    
+    try:
+        with open(file_path, 'r') as f:
+            content = f.read()
+    except FileNotFoundError:
+        content = ''
+    
+    truncated_content = content[:150] + '...' if len(content) > 150 else content
+
+    try:
+        tags = tuple(note[3].split(', '))
+    except AttributeError:
+        tags = ()
+    
+    try:
+        return (note[0], note[1], truncated_content, tags, note[4])
+    except:
+        return (note[0], note[1], truncated_content, tags)
+
+
 @app.route('/')
 def render_home():
     return render_template('index.html', title='home', logged_in=is_logged_in())
@@ -87,52 +109,29 @@ def render_dashboard():
                        GROUP BY n.note_id, n.title, s.name, n.content
                        ORDER BY n.updated_at DESC;''', 
                        (session['userid'], ))
-    shared_list = fetch('''SELECT 
-                            n.title,
-                            s.name,
-                            n.content,
-                            GROUP_CONCAT(t.name, ', ') AS tags,
-                       FROM note n
-                       JOIN subject s ON n.fk_subject_id = s.subject_id
-                       LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
-                       LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
-                       WHERE n.fk_user_id = ?
-                       GROUP BY n.note_id, n.title, s.name, n.content
-                       ORDER BY n.updated_at DESC;''', 
+    shared_list = fetch('''SELECT
+                        n.title,
+                        s.name,
+                        n.content,
+                        GROUP_CONCAT(t.name, ', ') AS tags,
+                        u.fname || ' ' || u.lname AS owner
+                        FROM note n
+                        JOIN subject s ON n.fk_subject_id = s.subject_id
+                        LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
+                        LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
+                        JOIN user u ON n.fk_user_id = u.user_id
+                        JOIN shared_note sn ON n.note_id = sn .fk_note_id
+                        WHERE sn.fk_user_id = ?
+                        GROUP BY n.note_id, n.title, s.name, n.content
+                        ORDER BY n.updated_at DESC;''', 
                        (session['userid'], ))
     subject_list = fetch('SELECT subject_id, name FROM subject WHERE fk_user_id=?', (session['userid'], ))
 
     for i, note in enumerate(note_list):
-        file_path = f'uploads/{note[2]}'
-        
-        try:
-            with open(file_path, 'r') as f:
-                content = f.read()
-        except FileNotFoundError:
-            content = ''
-
-        try:
-            tags = tuple(note[3].split(', '))
-        except AttributeError:
-            tags = ()
-        
-        note_list[i] = (note[0],  note[1], content[:150] + '...', tags)
+        note_list[i] = process_note(note)
     
     for i, note in enumerate(shared_list):
-        file_path = f'uploads/{note[2]}'
-        
-        try:
-            with open(file_path, 'r') as f:
-                content = f.read()
-        except FileNotFoundError:
-            content = ''
-        
-        try:
-            tags = tuple(note[3].split(', '))
-        except AttributeError:
-            tags = ()
-        
-        shared_list[i] = (note[0],  note[1], content[:150] + '...', tags, 'Ora Mead')
+        shared_list[i] = process_note(note)
 
     return render_template('dashboard.html', title='dashboard', logged_in=is_logged_in(), notes=note_list, shared=shared_list, subjects=subject_list)
 
@@ -213,7 +212,7 @@ def render_account():
     return render_template('account.html', title='account', logged_in=is_logged_in())
 
 
-@app.route('/upload', methods=['GET', 'POST'])
+@app.route('/upload', methods=['POST'])
 def upload():
     title = request.form.get('title', '').strip() or 'Untitled Note'
     file = request.files.get('file')
@@ -246,6 +245,15 @@ def upload():
     
     return redirect('/dashboard')
 
+
+@app.route('/add-subject', methods=['POST'])
+def add_subject():
+    data = request.get_json()
+    subject_name = data.get('subject_name')
+    
+    if subject_name:
+        insert("INSERT INTO subject (fk_user_id, name) VALUES (?, ?)", 
+               (session['userid'], subject_name))
 
 if __name__ == '__main__':
     app.run(debug=True)

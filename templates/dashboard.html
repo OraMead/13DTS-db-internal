@@ -5,6 +5,49 @@
 {% endblock %}
 
 {% block main %}
+<div class="button-group">
+    <button class="open-modal-btn" data-modal="new-note-modal">New Note or upload file</button>
+    <!-- <button class="open-modal-btn" data-modal="upload-modal">Upload File</button> -->
+</div>
+
+<div id="new-note-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" id="closeModal">&times;</span>
+        <h3>New Note</h3>
+
+        <form method="POST" enctype="multipart/form-data" action="/upload">
+            <input type="text" name="title" placeholder="Untitled Note" required>
+
+            <div class="form-group">
+                <div class="form-label">Subject</div>
+                <div class="form-element">
+                    <select name="subject" required>
+                        <option disabled selected value> -- select an option -- </option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject[0] }}">{{ subject[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <input type="file" name="file" required>
+            <button type="submit">Create</button>
+        </form>
+    </div>
+</div>
+
+<!-- <div id="upload-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" id="closeModal">&times;</span>
+        <h3>Upload a File</h3>
+        <form id="uploadForm" method="POST" enctype="multipart/form-data" action="/upload">
+            <input type="text" name="title" placeholder="Untitled Note" required><br><br>
+            <input type="file" name="file" required><br><br>
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+</div> -->
+
 <div class="note-group">
     <h3>My notes</h3>
     <div class="notes">
@@ -41,4 +84,6 @@
     {% endfor %}
     </div>
 </div>
+
+<script src="/static/script.js"></script>
 {% endblock %}

@@ -2,12 +2,22 @@ from flask import Flask, render_template, request, redirect, session
 import sqlite3
 from sqlite3 import Error
 from flask_bcrypt import Bcrypt
+import os
 
 DB_name = 'notes.db'
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
 app.secret_key = 'aiurghrbuinwtugabdbwtr'
+
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'txt'}
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 def create_connection(db_file):
@@ -64,7 +74,7 @@ def render_dashboard():
     if not is_logged_in():
         return redirect('/')
     
-    notes_list = fetch('''SELECT 
+    note_list = fetch('''SELECT 
                             n.title,
                             s.name,
                             n.content,
@@ -89,25 +99,35 @@ def render_dashboard():
                        WHERE n.fk_user_id = ?
                        GROUP BY n.note_id, n.title, s.name, n.content''', 
                        (session['userid'], ))
+    subject_list = fetch('SELECT subject_id, name FROM subject WHERE fk_user_id=?', (session['userid'], ))
 
-    for i, note in enumerate(notes_list):
-        file_path = f"user_data/{session['userid']}/notes/{note[2]}"
+    for i, note in enumerate(note_list):
+        file_path = f"uploads/{note[2]}"
         
         with open(file_path, 'r') as f:
             content = f.read()
         
-        notes_list[i] = (note[0],  note[1], content[:150] + '...', tuple(note[3].split(', ')))
+        try:
+            tags = tuple(note[3].split(', '))
+        except AttributeError:
+            tags = ()
+        
+        note_list[i] = (note[0],  note[1], content[:150] + '...', tags)
     
     for i, note in enumerate(shared_list):
-        file_path = f"user_data/{session['userid']}/notes/{note[2]}"
+        file_path = f"uploads/{note[2]}"
         
         with open(file_path, 'r') as f:
             content = f.read()
         
-        shared_list[i] = (note[0],  note[1], content[:150] + '...', tuple(note[3].split(', ')), 'Ora Mead')
+        try:
+            tags = tuple(note[3].split(', '))
+        except AttributeError:
+            tags = ()
+        
+        shared_list[i] = (note[0],  note[1], content[:150] + '...', tags, 'Ora Mead')
 
-
-    return render_template('dashboard.html', title='dashboard', logged_in=is_logged_in(), notes=notes_list, shared=shared_list)
+    return render_template('dashboard.html', title='dashboard', logged_in=is_logged_in(), notes=note_list, shared=shared_list, subjects=subject_list)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -186,5 +206,36 @@ def render_account():
     return render_template('account.html', title='account', logged_in=is_logged_in())
 
 
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
+    title = request.form.get('title')
+    file = request.files.get('file')
+    subject = request.form.get('subject')
+
+    print("File object:", file)
+    if file:
+        print("Filename:", file.filename)
+
+    con = create_connection(DB_name)
+    cur = con.cursor()
+
+    cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title, type) VALUES (?, ?, ?, 0)', (session['userid'], subject, title))
+    note_id = cur.lastrowid
+
+    if file and file.filename and allowed_file(file.filename):
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        new_filename = f"file_{note_id}.{ext}"
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], new_filename))
+
+        cur.execute('UPDATE note SET content = ? WHERE note_id = ?', (new_filename, note_id))
+    else:
+        return "File type not allowed", 400
+    
+    con.commit()
+    con.close()
+    
+    return redirect('/dashboard')
+
+
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block pageheading %}
+<h2>Editing Note {{ note_id }}</h2>
+{% endblock %}
+
+{% block main %}
+<form method="post">
+    <textarea name="content" rows="20" cols="80">{{ content }}</textarea><br>
+    <input type="hidden" name="filepath" value="{{ filepath }}">
+    <button type="submit">Save</button>
+</form>
+<br>
+<a href="{{ url_for('index') }}">Back to list</a>
+{% endblock %}

@@ -1,10 +1,10 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, url_for
 import sqlite3
 from sqlite3 import Error
 from flask_bcrypt import Bcrypt
 import os
 
-DB_name = 'notes.db'
+DB_PATH = 'notes.db'
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -14,6 +14,30 @@ UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'txt'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
+def get_all_notes():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT note_id, title FROM note")
+    notes = cursor.fetchall()
+    conn.close()
+    return notes
+
+
+def get_note_content(note_id):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT content FROM note WHERE note_id = ?", (note_id,))
+    result = cursor.fetchone()
+    conn.close()
+    if result:
+        filepath = f'uploads/{result[0]}'
+        if os.path.exists(filepath):
+            with open(filepath, 'r') as file:
+                content = file.read()
+            return filepath, content
+    return None, None
 
 
 def allowed_file(filename):
@@ -38,7 +62,7 @@ def is_logged_in():
 
 
 def insert(query: str, data: tuple, redirect_loc: str = None):
-    con = create_connection(DB_name)
+    con = create_connection(DB_PATH)
     cur = con.cursor()
     try:
         cur.execute(query, data)
@@ -50,7 +74,7 @@ def insert(query: str, data: tuple, redirect_loc: str = None):
 
 
 def fetch(query: str, arguments: tuple=()):
-    con = create_connection(DB_name)
+    con = create_connection(DB_PATH)
     cur = con.cursor()
     cur.execute(query, arguments)
     data = cur.fetchall()
@@ -82,17 +106,18 @@ def process_note(note):
 
 
 @app.route('/')
-def render_home():
-    return render_template('index.html', title='home', logged_in=is_logged_in())
+def index():
+    note_list = get_all_notes()
+    return render_template('index.html', title='home', logged_in=is_logged_in(), notes=note_list)
 
 
 @app.route('/about')
-def render_about():
+def about():
     return render_template('about.html', title='about', logged_in=is_logged_in())
 
 
 @app.route('/dashboard')
-def render_dashboard():
+def dashboard():
     if not is_logged_in():
         return redirect('/')
     
@@ -137,7 +162,7 @@ def render_dashboard():
 
 
 @app.route('/login', methods=['GET', 'POST'])
-def render_login():
+def login():
     if is_logged_in():
         return redirect('/')
     if request.method == 'POST':
@@ -169,7 +194,7 @@ def render_login():
 
 
 @app.route('/signup', methods=['GET', 'POST'])
-def render_signup_page():
+def signup():
     if is_logged_in():
         return redirect('/')
     if request.method == 'POST':
@@ -204,7 +229,7 @@ def logout():
 
 
 @app.route('/account')
-def render_account():
+def account():
     if not is_logged_in():
         return redirect('/')
     user_list = fetch('SELECT fname, lname FROM user WHERE user_id=?;', (session['userid'], ))
@@ -222,7 +247,7 @@ def upload():
     if file and not allowed_file(file.filename):
         return "Invalid file type", 400
 
-    con = create_connection(DB_name)
+    con = create_connection(DB_PATH)
     cur = con.cursor()
 
     if subject == 'add-new' and new_subject:
@@ -250,6 +275,20 @@ def upload():
     
     return redirect('/dashboard')
 
+
+@app.route('/edit/<int:note_id>', methods=['GET', 'POST'])
+def edit_note(note_id):
+    if request.method == 'POST':
+        content = request.form['content']
+        filepath = request.form['filepath']
+        with open(filepath, 'w') as file:
+            file.write(content)
+        return redirect(url_for('index'))
+
+    filepath, content = get_note_content(note_id)
+    if filepath:
+        return render_template('editor.html', title='Editor', content=content, filepath=filepath, note_id=note_id)
+    return "File not found", 404
 
 if __name__ == '__main__':
     app.run(debug=True)

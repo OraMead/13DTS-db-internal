@@ -84,29 +84,33 @@ def render_dashboard():
                        LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
                        LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
                        WHERE n.fk_user_id = ?
-                       GROUP BY n.note_id, n.title, s.name, n.content''', 
+                       GROUP BY n.note_id, n.title, s.name, n.content
+                       ORDER BY n.updated_at DESC;''', 
                        (session['userid'], ))
-    
     shared_list = fetch('''SELECT 
                             n.title,
                             s.name,
                             n.content,
-                            GROUP_CONCAT(t.name, ', ') AS tags
+                            GROUP_CONCAT(t.name, ', ') AS tags,
                        FROM note n
                        JOIN subject s ON n.fk_subject_id = s.subject_id
                        LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
                        LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
                        WHERE n.fk_user_id = ?
-                       GROUP BY n.note_id, n.title, s.name, n.content''', 
+                       GROUP BY n.note_id, n.title, s.name, n.content
+                       ORDER BY n.updated_at DESC;''', 
                        (session['userid'], ))
     subject_list = fetch('SELECT subject_id, name FROM subject WHERE fk_user_id=?', (session['userid'], ))
 
     for i, note in enumerate(note_list):
-        file_path = f"uploads/{note[2]}"
+        file_path = f'uploads/{note[2]}'
         
-        with open(file_path, 'r') as f:
-            content = f.read()
-        
+        try:
+            with open(file_path, 'r') as f:
+                content = f.read()
+        except FileNotFoundError:
+            content = ''
+
         try:
             tags = tuple(note[3].split(', '))
         except AttributeError:
@@ -115,10 +119,13 @@ def render_dashboard():
         note_list[i] = (note[0],  note[1], content[:150] + '...', tags)
     
     for i, note in enumerate(shared_list):
-        file_path = f"uploads/{note[2]}"
+        file_path = f'uploads/{note[2]}'
         
-        with open(file_path, 'r') as f:
-            content = f.read()
+        try:
+            with open(file_path, 'r') as f:
+                content = f.read()
+        except FileNotFoundError:
+            content = ''
         
         try:
             tags = tuple(note[3].split(', '))
@@ -208,13 +215,12 @@ def render_account():
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
-    title = request.form.get('title')
+    title = request.form.get('title', '').strip() or 'Untitled Note'
     file = request.files.get('file')
     subject = request.form.get('subject')
 
-    print("File object:", file)
-    if file:
-        print("Filename:", file.filename)
+    if file and not allowed_file(file.filename):
+        return "Invalid file type", 400
 
     con = create_connection(DB_name)
     cur = con.cursor()
@@ -222,15 +228,19 @@ def upload():
     cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title, type) VALUES (?, ?, ?, 0)', (session['userid'], subject, title))
     note_id = cur.lastrowid
 
+    new_filename = f"file_{note_id}.txt"
+
     if file and file.filename and allowed_file(file.filename):
         ext = file.filename.rsplit('.', 1)[1].lower()
         new_filename = f"file_{note_id}.{ext}"
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], new_filename))
-
-        cur.execute('UPDATE note SET content = ? WHERE note_id = ?', (new_filename, note_id))
     else:
-        return "File type not allowed", 400
-    
+        new_filename = f"file_{note_id}.txt"
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write('')
+
+    cur.execute('UPDATE note SET content = ? WHERE note_id = ?', (new_filename, note_id))
     con.commit()
     con.close()
     

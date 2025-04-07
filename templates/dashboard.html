@@ -23,11 +23,10 @@
                         {% for subject in subjects %}
                         <option value="{{ subject[0] }}">{{ subject[1] }}</option>
                         {% endfor %}
-                        <option value="add-new">Add new subject</option>
+                        <option value="add-new">Other</option>
                     </select>
                     <div id="new-subject-container" style="display: none;">
-                        <input type="text" id="new-subject-name" placeholder="Enter new subject" required>
-                        <button type="button" onclick="addNewSubject()">Add Subject</button>
+                        <input type="text" id="new-subject" name="new-subject" placeholder="Enter new subject">
                     </div>
                 </div>
             </div>

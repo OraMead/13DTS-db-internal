@@ -217,12 +217,17 @@ def upload():
     title = request.form.get('title', '').strip() or 'Untitled Note'
     file = request.files.get('file')
     subject = request.form.get('subject')
+    new_subject = request.form.get('new-subject').strip()
 
     if file and not allowed_file(file.filename):
         return "Invalid file type", 400
 
     con = create_connection(DB_name)
     cur = con.cursor()
+
+    if subject == 'add-new' and new_subject:
+        cur.execute('INSERT INTO subject (fk_user_id, name) VALUES (?, ?)', (session['userid'], new_subject))
+        subject = cur.lastrowid
 
     cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title, type) VALUES (?, ?, ?, 0)', (session['userid'], subject, title))
     note_id = cur.lastrowid
@@ -245,15 +250,6 @@ def upload():
     
     return redirect('/dashboard')
 
-
-@app.route('/add-subject', methods=['POST'])
-def add_subject():
-    data = request.get_json()
-    subject_name = data.get('subject_name')
-    
-    if subject_name:
-        insert("INSERT INTO subject (fk_user_id, name) VALUES (?, ?)", 
-               (session['userid'], subject_name))
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -95,14 +95,14 @@ def process_note(note):
     truncated_content = content[:150] + '...' if len(content) > 150 else content
 
     try:
-        tags = tuple(note[3].split(', '))
+        tags = tuple(note[4].split(', '))
     except AttributeError:
         tags = ()
     
     try:
-        return (note[0], note[1], truncated_content, tags, note[4])
+        return (note[0], note[1], truncated_content, note[3], tags, note[5])
     except:
-        return (note[0], note[1], truncated_content, tags)
+        return (note[0], note[1], truncated_content, note[3], tags)
 
 
 @app.route('/')
@@ -122,24 +122,26 @@ def dashboard():
         return redirect('/')
     
     note_list = fetch('''SELECT 
+                            n.note_id,
                             n.title,
-                            s.name,
                             n.content,
+                            s.name,
                             GROUP_CONCAT(t.name, ', ') AS tags
                        FROM note n
                        JOIN subject s ON n.fk_subject_id = s.subject_id
                        LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
                        LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
                        WHERE n.fk_user_id = ?
-                       GROUP BY n.note_id, n.title, s.name, n.content
+                       GROUP BY n.note_id, n.title, n.content, s.name
                        ORDER BY n.updated_at DESC;''', 
                        (session['userid'], ))
     shared_list = fetch('''SELECT
-                        n.title,
-                        s.name,
-                        n.content,
-                        GROUP_CONCAT(t.name, ', ') AS tags,
-                        u.fname || ' ' || u.lname AS owner
+                            n.note_id,
+                            n.title,
+                            n.content,
+                            s.name,
+                            GROUP_CONCAT(t.name, ', ') AS tags,
+                            u.fname || ' ' || u.lname AS owner
                         FROM note n
                         JOIN subject s ON n.fk_subject_id = s.subject_id
                         LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
@@ -283,6 +285,7 @@ def edit_note(note_id):
         filepath = request.form['filepath']
         with open(filepath, 'w') as file:
             file.write(content)
+        insert('UPDATE note set updated_at = CURRENT_TIMESTAMP WHERE note_id = ?', (note_id, ))
         return redirect(url_for('index'))
 
     filepath, content = get_note_content(note_id)

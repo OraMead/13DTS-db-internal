@@ -217,7 +217,7 @@ form {
     pointer-events: auto;
 }
 
-.action-btn {
+.note-actions button {
     all: unset;
     cursor: pointer;
     color: #888;
@@ -230,12 +230,12 @@ form {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.action-btn:hover {
+.note-actions button:hover {
     background-color: rgba(150, 150, 150, 0.2);
     color: #444;
 }
 
-.action-btn i {
+.note-actions button i {
     font-size: 1rem;
 }
 

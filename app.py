@@ -16,15 +16,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
-def get_all_notes():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT note_id, title FROM note")
-    notes = cursor.fetchall()
-    conn.close()
-    return notes
-
-
 def get_note_content(note_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -95,7 +86,9 @@ def process_note(note):
     truncated_content = content[:150] + '...' if len(content) > 150 else content
 
     try:
-        tags = tuple(note[4].split(', '))
+        tags = list(note[4].split('|'))
+        for i, tag in enumerate(tags):
+            tags[i] = tuple(tag.split(':'))
     except AttributeError:
         tags = ()
     
@@ -107,8 +100,7 @@ def process_note(note):
 
 @app.route('/')
 def index():
-    note_list = get_all_notes()
-    return render_template('index.html', title='home', logged_in=is_logged_in(), notes=note_list)
+    return render_template('index.html', title='home', logged_in=is_logged_in())
 
 
 @app.route('/about')
@@ -126,7 +118,7 @@ def dashboard():
                             n.title,
                             n.content,
                             s.name,
-                            GROUP_CONCAT(t.name, ', ') AS tags
+                            GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags
                        FROM note n
                        JOIN subject s ON n.fk_subject_id = s.subject_id
                        LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
@@ -140,7 +132,7 @@ def dashboard():
                             n.title,
                             n.content,
                             s.name,
-                            GROUP_CONCAT(t.name, ', ') AS tags,
+                            GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags,
                             u.fname || ' ' || u.lname AS owner
                         FROM note n
                         JOIN subject s ON n.fk_subject_id = s.subject_id
@@ -153,6 +145,7 @@ def dashboard():
                         ORDER BY n.updated_at DESC;''', 
                        (session['userid'], ))
     subject_list = fetch('SELECT subject_id, name FROM subject WHERE fk_user_id=?', (session['userid'], ))
+    tag_list = fetch('SELECT tag_id, name FROM tag WHERE fk_user_id IS NULL OR fk_user_id=?', (session['userid'], ))
 
     for i, note in enumerate(note_list):
         note_list[i] = process_note(note)
@@ -160,7 +153,7 @@ def dashboard():
     for i, note in enumerate(shared_list):
         shared_list[i] = process_note(note)
 
-    return render_template('dashboard.html', title='dashboard', logged_in=is_logged_in(), notes=note_list, shared=shared_list, subjects=subject_list)
+    return render_template('dashboard.html', title='dashboard', logged_in=is_logged_in(), notes=note_list, shared=shared_list, subjects=subject_list, tags=tag_list)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -292,6 +285,12 @@ def edit_note(note_id):
     if filepath:
         return render_template('editor.html', title='Editor', content=content, filepath=filepath, note_id=note_id)
     return "File not found", 404
+
+
+@app.route('/tag/<int:note_id>', methods=['POST'])
+def edit_tags(note_id):
+    return f'test {note_id}'
+
 
 if __name__ == '__main__':
     app.run(debug=True)

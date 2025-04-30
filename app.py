@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, session, url_for
 import sqlite3
-from sqlite3 import Error
 from flask_bcrypt import Bcrypt
 import os
 
@@ -16,12 +15,10 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
+# Temp function for editor
 def get_note_content(note_id):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT content FROM note WHERE note_id = ?", (note_id,))
-    result = cursor.fetchone()
-    conn.close()
+    result = fetch("SELECT content FROM note WHERE note_id = ?", (note_id, ), False)
+
     if result:
         filepath = f'uploads/{result[0]}'
         if os.path.exists(filepath):
@@ -31,51 +28,88 @@ def get_note_content(note_id):
     return None, None
 
 
-def allowed_file(filename):
+def allowed_file(filename) -> bool:
+    """
+    Check if a file is an allowed filetype
+    :param filename: Full name of file
+    :return: True if file is allowed, else False
+    """
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def create_connection(db_file):
+def create_connection(db_file: str) -> sqlite3.Connection|None:
+    """
+    Creates and returns a database connection
+    :param db_file: Database path to connect to
+    :return: Connection with database or None if error encountered
+    """
     try:
         connection = sqlite3.connect(db_file)
         return connection
-    except Error as e:
+    except sqlite3.Error as e:
         print(e)
         print('Error while connecting to database')
         return None
 
 
-def is_logged_in():
+def insert(query: str, data: tuple, redirect_loc: str = None) -> None:
+    """
+    Inserts a query into the database
+    :param query: Query to insert
+    :param data: Data to insert
+    :param redirect_loc: Location to redirect to if error
+    :return: Redirect if location given and error encountered
+    """
+    con = create_connection(DB_PATH)
+    cur = con.cursor()
+    try:
+        cur.execute(query, data)
+        con.commit()
+    except sqlite3.IntegrityError:
+        print('DB insert error')
+        return redirect(redirect_loc) if redirect else None
+    con.close()
+    return None
+
+
+def fetch(query: str, arguments: tuple = (), fetch_all: bool = True) -> list:
+    """
+    Returns data from the database
+    :param query: Query for database
+    :param arguments: Arguments for query if applicable
+    :param fetch_all: When true, fetch all rows, else only fetch first row
+    :return: List of values returned by query
+    """
+    con = create_connection(DB_PATH)
+    cur = con.cursor()
+    cur.execute(query, arguments)
+    if fetch_all:
+        data = cur.fetchall()
+    else:
+        data = cur.fetchone()
+    con.close()
+
+    return data
+
+
+def is_logged_in() -> bool:
+    """
+    Check if user has logged in or not
+    :return: True if user has logged in else False
+    """
     if session.get('email') is None:
         return False
     else:
         return True
 
 
-def insert(query: str, data: tuple, redirect_loc: str = None):
-    con = create_connection(DB_PATH)
-    cur = con.cursor()
-    try:
-        cur.execute(query, data)
-    except sqlite3.IntegrityError:
-        print('DB insert error')
-        return redirect(redirect_loc) if redirect else None
-    con.commit()
-    con.close()
-
-
-def fetch(query: str, arguments: tuple=()):
-    con = create_connection(DB_PATH)
-    cur = con.cursor()
-    cur.execute(query, arguments)
-    data = cur.fetchall()
-    con.close()
-
-    return data
-
-
-def process_note(note):
-    file_path = f'uploads/{note[2]}'
+def process_note(note) -> tuple:
+    """
+    Takes data from database and converts it into form for display
+    :param note: Note tuple to be read
+    :return: Updated note tuple
+    """
+    file_path = f'{UPLOAD_FOLDER}/{note[2]}'
     
     try:
         with open(file_path, 'r') as f:
@@ -93,73 +127,98 @@ def process_note(note):
         tags = ()
     
     try:
-        return (note[0], note[1], truncated_content, note[3], tags, note[5])
-    except:
-        return (note[0], note[1], truncated_content, note[3], tags)
+        data = (note[0], note[1], truncated_content, note[3], tags, note[5])
+    except IndexError:
+        data = (note[0], note[1], truncated_content, note[3], tags)
+
+    return data
 
 
 @app.route('/')
 def index():
+    """
+    Renders the index page
+    :return: Rendered index page
+    """
     return render_template('index.html', title='home', logged_in=is_logged_in())
 
 
 @app.route('/about')
 def about():
+    """
+    Renders the about page
+    :return: Rendered about page
+    """
     return render_template('about.html', title='about', logged_in=is_logged_in())
 
 
 @app.route('/dashboard')
 def dashboard():
+    """
+    Renders the dashboard page
+    :return: Rendered dashboard page
+    """
     if not is_logged_in():
         return redirect('/')
     
     note_list = fetch('''SELECT 
-                            n.note_id,
-                            n.title,
-                            n.content,
-                            s.name,
-                            GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags
-                       FROM note n
-                       JOIN subject s ON n.fk_subject_id = s.subject_id
-                       LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
-                       LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
-                       WHERE n.fk_user_id = ?
-                       GROUP BY n.note_id, n.title, n.content, s.name
-                       ORDER BY n.updated_at DESC;''', 
-                       (session['userid'], ))
-    shared_list = fetch('''SELECT
-                            n.note_id,
-                            n.title,
-                            n.content,
-                            s.name,
-                            GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags,
-                            u.fname || ' ' || u.lname AS owner
-                        FROM note n
-                        JOIN subject s ON n.fk_subject_id = s.subject_id
-                        LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
-                        LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
-                        JOIN user u ON n.fk_user_id = u.user_id
-                        JOIN shared_note sn ON n.note_id = sn .fk_note_id
-                        WHERE sn.fk_user_id = ?
-                        GROUP BY n.note_id, n.title, s.name, n.content
-                        ORDER BY n.updated_at DESC;''', 
-                       (session['userid'], ))
-    subject_list = fetch('SELECT subject_id, name FROM subject WHERE fk_user_id=?', (session['userid'], ))
-    tag_list = fetch('SELECT tag_id, name FROM tag WHERE fk_user_id IS NULL OR fk_user_id=?', (session['userid'], ))
-
+                             n.note_id,
+                             n.title,
+                             n.content,
+                             s.name,
+                             GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags
+                         FROM note n
+                                  JOIN subject s ON n.fk_subject_id = s.subject_id
+                                  LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
+                                  LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
+                         WHERE n.fk_user_id = ?
+                         GROUP BY n.note_id, n.title, n.content, s.name, n.updated_at
+                         ORDER BY n.updated_at DESC;''',
+                      (session['userid'], ))
     for i, note in enumerate(note_list):
         note_list[i] = process_note(note)
-    
+
+    shared_list = fetch('''SELECT 
+                               n.note_id,
+                               n.title,
+                               n.content,
+                               s.name,
+                               GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags,
+                               u.fname || ' ' || u.lname AS owner 
+                           FROM note n
+                                    JOIN subject s ON n.fk_subject_id = s.subject_id
+                                    LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
+                                    LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
+                                    JOIN user u ON n.fk_user_id = u.user_id
+                                    JOIN shared_note sn ON n.note_id = sn .fk_note_id
+                           WHERE sn.fk_user_id = ?
+                           GROUP BY n.note_id, n.title, s.name, n.content, n.updated_at
+                           ORDER BY n.updated_at DESC;''',
+                        (session['userid'], ))
     for i, note in enumerate(shared_list):
         shared_list[i] = process_note(note)
 
-    return render_template('dashboard.html', title='dashboard', logged_in=is_logged_in(), notes=note_list, shared=shared_list, subjects=subject_list, tags=tag_list)
+    subject_list = fetch('SELECT subject_id, name FROM subject WHERE fk_user_id=?', (session['userid'],))
+    tag_list = fetch('SELECT tag_id, name FROM tag WHERE fk_user_id IS NULL OR fk_user_id=?', (session['userid'],))
+
+    return render_template('dashboard.html',
+                           title='dashboard',
+                           logged_in=is_logged_in(),
+                           notes=note_list,
+                           shared=shared_list,
+                           subjects=subject_list,
+                           tags=tag_list)
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """
+    Renders the login page and logs in user
+    :return: Rendered login page or redirect to index page
+    """
     if is_logged_in():
         return redirect('/')
+
     if request.method == 'POST':
         email = request.form.get('email').strip().lower()
         password = request.form.get('password')
@@ -173,10 +232,10 @@ def login():
             db_password = user_data[0][3]
             role = user_data[0][4]
         except IndexError:
-            return redirect('/login?error=email+and+or+password+invalid')
+            return redirect('/login?error=email+or+password+invalid')
         
         if not bcrypt.check_password_hash(db_password, password):
-            return redirect('/login?error=email+and+or+password+invalid')
+            return redirect('/login?error=email+or+password+invalid')
         
         session['email'] = email
         session['userid'] = userid
@@ -192,6 +251,7 @@ def login():
 def signup():
     if is_logged_in():
         return redirect('/')
+
     if request.method == 'POST':
         fname = request.form.get('fname').strip().title()
         lname = request.form.get('lname').strip().title()
@@ -202,9 +262,6 @@ def signup():
 
         if password != password2:
             return redirect('/signup?error=passwords+dont+match')
-        
-        if len(password) < 8:
-            return redirect('/signup?error=password+too+short')
 
         hashed_password = bcrypt.generate_password_hash(password)
 

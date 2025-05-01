@@ -39,15 +39,13 @@ document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
 });
 
 
-function bindRemoveTagButtons() {
-    document.querySelectorAll('.remove-tag-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const noteId = btn.dataset.noteId;
-            const tagId = btn.dataset.tagId;
-            toggleTag(noteId, tagId, false);
-        });
-    });
-}
+document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('remove-tag-btn')) {
+        const noteId = e.target.dataset.noteId;
+        const tagId = e.target.dataset.tagId;
+        toggleTag(noteId, tagId, false);
+    }
+});
 
 
 function toggleTag(noteId, tagId, checked) {
@@ -92,7 +90,6 @@ function refreshTagList(noteId) {
             tempDiv.innerHTML = html;
             const newList = tempDiv.querySelector('.tag-list');
             tagListContainer.replaceWith(newList);
-            bindRemoveTagButtons();
         })
         .catch(error => {
             console.error('Failed to refresh tag list:', error);

@@ -24,12 +24,12 @@ document.getElementById('subject-select').addEventListener('change', function ()
 
 // Toggle tags
 document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
-    checkbox.addEventListener("change", () => {
+    checkbox.addEventListener('change', () => {
         const noteId = checkbox.dataset.noteId;
         const tagId = checkbox.dataset.tagId;
         const checked = checkbox.checked;
 
-        fetch("/toggle", {
+        fetch('/toggle', {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -40,12 +40,35 @@ document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
                 action: checked
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error('Server returned error');
+            return response.json();
+        })
         .then(data => {
-            if (!data.success) {
-                alert("Failed to update tag.");
-                checkbox.checked = !checked;
-            }
+            if (!data.success) throw new Error(data.error || 'Unknown error');
+
+            refreshTagList(noteId);
+        })
+        .catch(error => {
+            alert('Failed to update tag: ' + error.message);
+            checkbox.checked = !checked;
         });
     });
 });
+
+
+function refreshTagList(noteId) {
+    fetch(`/process-tags/${noteId}`)
+        .then(response => response.text())
+        .then(html => {
+            const noteContainer = document.querySelector(`.note-box[data-note-id="${noteId}"]`);
+            const tagListContainer = noteContainer.querySelector('.tag-list');
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const newList = tempDiv.querySelector('.tag-list');
+            tagListContainer.replaceWith(newList);
+        })
+        .catch(error => {
+            console.error('Failed to refresh tag list:', error);
+        });
+}

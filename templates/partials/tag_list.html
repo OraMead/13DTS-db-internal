@@ -1,0 +1,9 @@
+<ul class="tag-list">
+    <li><strong>{{ subject[0] }}</strong></li>
+    {% for tag in tags %}
+    <li class="tag-item">
+        <span>{{ tag[0] }}</span>
+        <button class="remove-tag-btn">&times;</button>
+    </li>
+    {% endfor %}
+</ul>

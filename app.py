@@ -374,13 +374,27 @@ def toggle():
     action = data['action']
 
     if action:
-        print(f'Add {note_id} {tag_id}')
         insert('INSERT OR IGNORE INTO note_tag (fk_note_id, fk_tag_id) VALUES (?, ?)', (note_id, tag_id))
     else:
-        print(f'Remove {note_id} {tag_id}')
         insert('DELETE FROM note_tag WHERE fk_note_id = ? AND fk_tag_id = ?', (note_id, tag_id))
 
     return jsonify({'success': True})
+
+
+@app.route('/process-tags/<int:note_id>')
+def process_tags(note_id):
+    tag_list = fetch('''SELECT t.name 
+          FROM tag t JOIN note_tag nt ON t.tag_id=nt.fk_tag_id 
+          WHERE nt.fk_note_id=? ORDER BY t.tag_id;''',
+          (note_id, ))
+    subject = fetch('''SELECT s.name 
+                    FROM note n JOIN subject s ON fk_subject_id = subject_id
+                    WHERE n.note_id=?''',
+                    (note_id, ),
+                    False)
+
+    return render_template('/partials/tag_list.html', tags=tag_list, subject=subject)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

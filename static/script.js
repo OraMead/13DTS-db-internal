@@ -1,3 +1,9 @@
+// On start logic
+document.addEventListener('DOMContentLoaded', () => {
+    bindRemoveTagButtons();
+});
+
+
 // Modal popup boxes
 document.querySelectorAll('.open-modal-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -28,33 +34,52 @@ document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
         const noteId = checkbox.dataset.noteId;
         const tagId = checkbox.dataset.tagId;
         const checked = checkbox.checked;
-
-        fetch('/toggle', {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                note_id: noteId,
-                tag_id: tagId,
-                action: checked
-            })
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Server returned error');
-            return response.json();
-        })
-        .then(data => {
-            if (!data.success) throw new Error(data.error || 'Unknown error');
-
-            refreshTagList(noteId);
-        })
-        .catch(error => {
-            alert('Failed to update tag: ' + error.message);
-            checkbox.checked = !checked;
-        });
+        toggleTag(noteId, tagId, checked)
     });
 });
+
+
+function bindRemoveTagButtons() {
+    document.querySelectorAll('.remove-tag-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const noteId = btn.dataset.noteId;
+            const tagId = btn.dataset.tagId;
+            toggleTag(noteId, tagId, false);
+        });
+    });
+}
+
+
+function toggleTag(noteId, tagId, checked) {
+    fetch('/toggle', {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            note_id: noteId,
+            tag_id: tagId,
+            action: checked
+        })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Server returned error');
+        return response.json();
+    })
+    .then(data => {
+        if (!data.success) throw new Error(data.error || 'Unknown error');
+
+        refreshTagList(noteId);
+
+        const modal = document.getElementById(`change-tags-modal-${noteId}`);
+        const checkbox = modal.querySelector(`.tag-checkbox[data-tag-id="${tagId}"]`);
+        if (checkbox) checkbox.checked = checked;
+    })
+    .catch(error => {
+        alert('Failed to update tag: ' + error.message);
+        checkbox.checked = !checked;
+    });
+}
 
 
 function refreshTagList(noteId) {
@@ -67,6 +92,7 @@ function refreshTagList(noteId) {
             tempDiv.innerHTML = html;
             const newList = tempDiv.querySelector('.tag-list');
             tagListContainer.replaceWith(newList);
+            bindRemoveTagButtons();
         })
         .catch(error => {
             console.error('Failed to refresh tag list:', error);

@@ -119,21 +119,19 @@ def process_note(note) -> tuple:
     
     truncated_content = content[:150] + '...' if len(content) > 150 else content
 
-    tag_list = []
     tag_id = []
     try:
         tags = list(note[4].split('|'))
         for i, tag in enumerate(tags):
-            tag_info = tuple(tag.split(':'))
-            tag_list.append(tag_info[1])
-            tag_id.append(int(tag_info[0]))
+            tags[i] = tuple(tag.split(':'))
+            tag_id.append(int(tags[i][0]))
     except AttributeError:
-        pass
+        tags = []
     
     try:
-        data = (note[0], note[1], truncated_content, note[3], tag_list, tag_id, note[5])
+        data = (note[0], note[1], truncated_content, note[3], tags, tag_id, note[5])
     except IndexError:
-        data = (note[0], note[1], truncated_content, note[3], tag_list, tag_id)
+        data = (note[0], note[1], truncated_content, note[3], tags, tag_id)
 
     return data
 
@@ -383,17 +381,17 @@ def toggle():
 
 @app.route('/process-tags/<int:note_id>')
 def process_tags(note_id):
-    tag_list = fetch('''SELECT t.name 
+    tag_list = fetch('''SELECT t.tag_id, t.name 
           FROM tag t JOIN note_tag nt ON t.tag_id=nt.fk_tag_id 
           WHERE nt.fk_note_id=? ORDER BY t.tag_id;''',
           (note_id, ))
-    subject = fetch('''SELECT s.name 
+    note_list = fetch('''SELECT n.note_id, s.name 
                     FROM note n JOIN subject s ON fk_subject_id = subject_id
                     WHERE n.note_id=?''',
                     (note_id, ),
                     False)
 
-    return render_template('/partials/tag_list.html', tags=tag_list, subject=subject)
+    return render_template('/partials/tag_list.html', tags=tag_list, note=note_list)
 
 
 if __name__ == '__main__':

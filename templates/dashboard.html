@@ -82,7 +82,7 @@
                         <div class="form-element">
                             {% for tag in tags %}
                             <label>
-                                <input type="checkbox" name="tags[]" value="{{ tag[0] }}"
+                                <input type="checkbox" class="tag-checkbox" data-tag-id="{{ tag[0] }}" data-note-id="{{ note[0] }}"
                                     {% if tag[0] in note[5] %}checked{% endif %}>
                                 {{ tag[1] }}
                             </label><br>

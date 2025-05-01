@@ -125,7 +125,7 @@ nav a:hover {
 }
 
 /* Form Styling */
-form {
+/* form {
     width: 80%;
     margin: auto;
     padding-top: 3rem;
@@ -158,7 +158,7 @@ form {
 .form-group input {
     padding: 0.3rem;
     width: 100%;
-}
+} */
 
 /* Tag List */
 .tag-list {

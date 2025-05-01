@@ -119,17 +119,21 @@ def process_note(note) -> tuple:
     
     truncated_content = content[:150] + '...' if len(content) > 150 else content
 
+    tag_list = []
+    tag_id = []
     try:
         tags = list(note[4].split('|'))
         for i, tag in enumerate(tags):
-            tags[i] = tuple(tag.split(':'))
+            tag_info = tuple(tag.split(':'))
+            tag_list.append(tag_info[1])
+            tag_id.append(int(tag_info[0]))
     except AttributeError:
-        tags = ()
+        pass
     
     try:
-        data = (note[0], note[1], truncated_content, note[3], tags, note[5])
+        data = (note[0], note[1], truncated_content, note[3], tag_list, tag_id, note[5])
     except IndexError:
-        data = (note[0], note[1], truncated_content, note[3], tags)
+        data = (note[0], note[1], truncated_content, note[3], tag_list, tag_id)
 
     return data
 
@@ -249,6 +253,10 @@ def login():
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
+    """
+    Render signup page and signup new users
+    :return: Rendered signup page or redirect to login page
+    """
     if is_logged_in():
         return redirect('/')
 
@@ -276,21 +284,32 @@ def signup():
 
 @app.route('/logout')
 def logout():
+    """
+    Logs out user and redirects to login page
+    :return: Redirect to the login page
+    """
     [session.pop(key) for key in list(session.keys())]
     return redirect('/login')
 
 
 @app.route('/account')
 def account():
+    """
+    Renders the account page for user information
+    :return: Rendered account page
+    """
     if not is_logged_in():
         return redirect('/')
-    user_list = fetch('SELECT fname, lname FROM user WHERE user_id=?;', (session['userid'], ))
 
     return render_template('account.html', title='account', logged_in=is_logged_in())
 
 
 @app.route('/upload', methods=['POST'])
 def upload():
+    """
+    Upload file to database
+    :return: Redirect to dashboard page
+    """
     title = request.form.get('title', '').strip() or 'Untitled Note'
     file = request.files.get('file')
     subject = request.form.get('subject')
@@ -308,8 +327,6 @@ def upload():
 
     cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title, type) VALUES (?, ?, ?, 0)', (session['userid'], subject, title))
     note_id = cur.lastrowid
-
-    new_filename = f"file_{note_id}.txt"
 
     if file and file.filename and allowed_file(file.filename):
         ext = file.filename.rsplit('.', 1)[1].lower()
@@ -330,6 +347,11 @@ def upload():
 
 @app.route('/edit/<int:note_id>', methods=['GET', 'POST'])
 def edit_note(note_id):
+    """
+    Edit note text
+    :param note_id: Note id for editing
+    :return: Render of editor page
+    """
     if request.method == 'POST':
         content = request.form['content']
         filepath = request.form['filepath']
@@ -342,11 +364,6 @@ def edit_note(note_id):
     if filepath:
         return render_template('editor.html', title='Editor', content=content, filepath=filepath, note_id=note_id)
     return "File not found", 404
-
-
-@app.route('/tag/<int:note_id>', methods=['POST'])
-def edit_tags(note_id):
-    return f'test {note_id}'
 
 
 if __name__ == '__main__':

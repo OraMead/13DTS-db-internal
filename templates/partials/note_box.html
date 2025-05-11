@@ -1,0 +1,28 @@
+<div class="note-box" data-note-id="{{ note[0] }}">
+    <a href="{{ url_for('edit_note', note_id=note[0]) }}">
+        <h3 class="note-box-title">{{ note[1] }}</h3>
+        <p>{{ note[2] }}</p><!-- Content -->
+    </a>
+
+    <ul class="tag-list">
+        <li class="tag-subject"><strong>{{ note[3] }}</strong></li><!-- Subject -->
+        {% for tag in note[4] %}<!-- Tags -->
+        <li class="tag-item">
+            <span>{{ tag[1] }}</span>
+            <button class="remove-tag-btn" data-note-id="{{ note[0] }}" data-tag-id="{{ tag[0] }}">&times;</button>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <div class="note-actions">
+        <button class="open-modal-btn" data-modal="change-tags-modal-{{ note[0] }}" title="Change Tags"><i class="fas fa-tag"></i></button>
+        <button class="open-modal-btn" data-modal="share-note-modal-{{ note[0] }}" title="Share"><i class="fas fa-share-alt"></i></button>
+        <button class="open-modal-btn" data-modal="copy-note-modal-{{ note[0] }}" title="Copy"><i class="fas fa-copy"></i></button>
+        <button class="open-modal-btn" data-modal="delete-note-modal-{{ note[0] }}" title="Delete"><i class="fas fa-trash-alt"></i></button>
+    </div>
+
+    {% include 'partials/modals/change_tags.html' %}
+    {% include 'partials/modals/share_note.html' %}
+    {% include 'partials/modals/copy_note.html' %}
+    {% include 'partials/modals/delete_note.html' %}
+</div> 

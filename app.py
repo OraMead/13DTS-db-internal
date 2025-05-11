@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session, url_for, jsonify
 import sqlite3
 from flask_bcrypt import Bcrypt
 import os
@@ -119,21 +119,19 @@ def process_note(note) -> tuple:
     
     truncated_content = content[:150] + '...' if len(content) > 150 else content
 
-    tag_list = []
     tag_id = []
     try:
         tags = list(note[4].split('|'))
         for i, tag in enumerate(tags):
-            tag_info = tuple(tag.split(':'))
-            tag_list.append(tag_info[1])
-            tag_id.append(int(tag_info[0]))
+            tags[i] = tuple(tag.split(':'))
+            tag_id.append(int(tags[i][0]))
     except AttributeError:
-        pass
+        tags = []
     
     try:
-        data = (note[0], note[1], truncated_content, note[3], tag_list, tag_id, note[5])
+        data = (note[0], note[1], truncated_content, note[3], tags, tag_id, note[5])
     except IndexError:
-        data = (note[0], note[1], truncated_content, note[3], tag_list, tag_id)
+        data = (note[0], note[1], truncated_content, note[3], tags, tag_id)
 
     return data
 
@@ -364,6 +362,59 @@ def edit_note(note_id):
     if filepath:
         return render_template('editor.html', title='Editor', content=content, filepath=filepath, note_id=note_id)
     return "File not found", 404
+
+
+@app.route('/toggle', methods=['POST'])
+def toggle():
+    data = request.get_json()
+    note_id = data['note_id']
+    tag_id = data['tag_id']
+    action = data['action']
+
+    if action:
+        insert('INSERT OR IGNORE INTO note_tag (fk_note_id, fk_tag_id) VALUES (?, ?)', (note_id, tag_id))
+    else:
+        insert('DELETE FROM note_tag WHERE fk_note_id = ? AND fk_tag_id = ?', (note_id, tag_id))
+
+    return jsonify({'success': True})
+
+
+@app.route('/process-tags/<int:note_id>')
+def process_tags(note_id):
+    tag_list = fetch('''SELECT t.tag_id, t.name 
+          FROM tag t JOIN note_tag nt ON t.tag_id=nt.fk_tag_id 
+          WHERE nt.fk_note_id=? ORDER BY t.tag_id;''',
+          (note_id, ))
+    note_list = fetch('''SELECT n.note_id, s.name 
+                    FROM note n JOIN subject s ON fk_subject_id = subject_id
+                    WHERE n.note_id=?''',
+                    (note_id, ),
+                    False)
+
+    return render_template('/partials/tag_list.html', tags=tag_list, note=note_list)
+
+
+@app.route('/delete/<int:note_id>', methods=['POST'])
+def delete(note_id):
+    if not is_logged_in():
+        return redirect('/login')
+    
+    owner = fetch("SELECT fk_user_id FROM note WHERE note_id = ?", (note_id,), False)
+    if not owner or owner[0] != session['userid']:
+        return "Unauthorized", 403
+
+
+    result = fetch("SELECT content FROM note WHERE note_id = ?", (note_id,), fetch_all=False)
+    if result:
+        insert('DELETE FROM note_tag WHERE fk_note_id = ?', (note_id, ))
+        insert('DELETE FROM note WHERE note_id = ?', (note_id, ))
+        filename = result[0]
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+
+    return redirect('/dashboard')
 
 
 if __name__ == '__main__':

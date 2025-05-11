@@ -170,34 +170,72 @@ nav a:hover {
     margin-bottom: 0.5rem;
     padding-top: 0.5rem;
     padding-bottom: 1.5rem;
+    align-items: flex-start;
 }
 
 .tag-list li {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: max-content;
+    max-width: 100%;
+}
+
+.tag-subject {
+    font-size: 0.8rem;
+    background-color: #d8d8d8;
+    padding: 0.3rem 0.7rem;
+    border-radius: 0.7rem;
+    white-space: nowrap;
+    position: relative;   
+}
+
+.tag-item {
     font-size: 0.8rem;
     background-color: #d8d8d8;
     padding: 0.3rem 0.7rem;
     border-radius: 0.7rem;
     white-space: nowrap;
     position: relative;
+    overflow: hidden;
+    padding-right: 1rem;
+    transition: padding-right 0.3s ease;
 }
 
-/* Hover Effects for Tags */
+.tag-item:hover {
+    padding-right: 1.5rem;
+}
+
 .remove-tag-btn {
     position: absolute;
-    top: 0;
-    right: 0;
+    top: 50%;
+    right: 0.3rem;
+    transform: translateY(-50%);
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
     background-color: transparent;
     border: none;
-    color: red;
+    color: #888;
     cursor: pointer;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    line-height: 1rem;
+    padding: 0;
+    transition: opacity 0.3s ease, background-color 0.3s ease, color 0.3s ease;
 }
 
 .tag-item:hover .remove-tag-btn {
     opacity: 1;
     pointer-events: auto;
+}
+
+.remove-tag-btn:hover {
+    background-color: rgba(150, 150, 150, 0.2);
+    color: #444;
 }
 
 /* Action Buttons for Notes (Add tags, share, copy delete) */
@@ -260,7 +298,7 @@ nav a:hover {
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-.close-btn {
+span.close-btn {
     float: right;
     cursor: pointer;
     font-size: 18px;
@@ -269,7 +307,7 @@ nav a:hover {
 /* General Button Styling */
 button {
     padding: 0.3rem 0.7rem;
-    background-color: #4CAF50;
+    background-color: #828282;
     color: white;
     border: none;
     cursor: pointer;
@@ -277,6 +315,23 @@ button {
     transition: background-color 0.3s ease;
 }
 
-button:hover, .add-tag-btn:hover {
+button:hover {
+    background-color: #a3a3a3;
+}
+
+/* Specific Button Styling */
+.button-group .open-modal-btn {
+    background-color: #4CAF50;
+}
+
+.button-group .open-modal-btn:hover {
     background-color: #45a049;
+}
+
+.delete-btn {
+    background-color: #c32d2d;
+}
+
+.delete-btn:hover {
+    background-color: #ff0000;
 }

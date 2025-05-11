@@ -394,5 +394,28 @@ def process_tags(note_id):
     return render_template('/partials/tag_list.html', tags=tag_list, note=note_list)
 
 
+@app.route('/delete/<int:note_id>', methods=['POST'])
+def delete(note_id):
+    if not is_logged_in():
+        return redirect('/login')
+    
+    owner = fetch("SELECT fk_user_id FROM note WHERE note_id = ?", (note_id,), False)
+    if not owner or owner[0] != session['userid']:
+        return "Unauthorized", 403
+
+
+    result = fetch("SELECT content FROM note WHERE note_id = ?", (note_id,), fetch_all=False)
+    if result:
+        insert('DELETE FROM note_tag WHERE fk_note_id = ?', (note_id, ))
+        insert('DELETE FROM note WHERE note_id = ?', (note_id, ))
+        filename = result[0]
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+
+    return redirect('/dashboard')
+
+
 if __name__ == '__main__':
     app.run(debug=True)

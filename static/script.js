@@ -1,7 +1,7 @@
 // On start logic
-document.addEventListener('DOMContentLoaded', () => {
-    bindRemoveTagButtons();
-});
+// document.addEventListener('DOMContentLoaded', () => {
+//     bindRemoveTagButtons();
+// });
 
 
 // Modal popup boxes

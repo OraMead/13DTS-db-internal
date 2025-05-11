@@ -298,7 +298,7 @@ nav a:hover {
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-.close-btn {
+span.close-btn {
     float: right;
     cursor: pointer;
     font-size: 18px;
@@ -307,7 +307,7 @@ nav a:hover {
 /* General Button Styling */
 button {
     padding: 0.3rem 0.7rem;
-    background-color: #4CAF50;
+    background-color: #828282;
     color: white;
     border: none;
     cursor: pointer;
@@ -315,6 +315,23 @@ button {
     transition: background-color 0.3s ease;
 }
 
-button:hover, .add-tag-btn:hover {
+button:hover {
+    background-color: #a3a3a3;
+}
+
+/* Specific Button Styling */
+.button-group .open-modal-btn {
+    background-color: #4CAF50;
+}
+
+.button-group .open-modal-btn:hover {
     background-color: #45a049;
+}
+
+.delete-btn {
+    background-color: #c32d2d;
+}
+
+.delete-btn:hover {
+    background-color: #ff0000;
 }

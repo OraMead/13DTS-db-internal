@@ -434,5 +434,19 @@ def delete(note_id):
     return redirect('/dashboard')
 
 
+@app.route('/copy/<int:note_id>', methods=['POST'])
+def copy(note_id):
+    if not is_logged_in():
+        return redirect('/login')
+    
+    title = request.form.get('title')
+    tags = request.form.get('tags')
+    shared = request.form.get('shared')
+
+    print(f'Copy {note_id}', title, tags, shared)
+
+    return redirect('/dashboard')
+
+
 if __name__ == '__main__':
     app.run(debug=True)

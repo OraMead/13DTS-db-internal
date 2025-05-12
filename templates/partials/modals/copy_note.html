@@ -1,6 +1,27 @@
 <div id="copy-note-modal-{{ note.id }}" class="modal">
     <div class="modal-content">
         <span class="close-btn">&times;</span>
-        <p>Cannot copy notes at this time</p>
+        
+        <form method="POST" action="{{ url_for('copy', note_id=note.id) }}">
+            <div class="form-group">
+                <div class="form-label">Title:</div>
+                <div class="form-element"><input id="title" name="title" type="text" placeholder="Copy of {{ note.title }}"></div>
+            </div>
+
+            <div class="form-group">
+                <div class="form-label">Copy tags?</div>
+                <div class="form-element"><input id="tags" name="tags" type="checkbox" checked></div>
+            </div>
+
+            <div class="form-group">
+                <div class="form-label">Copy collaborators?</div>
+                <div class="form-element"><input id="shared" name="shared" type="checkbox" checked></div>
+            </div>
+
+            <div class="button-group">
+                <button type="reset">Reset</button>
+                <button type="submit">Copy</button>
+            </div>
+        </form>
     </div>
 </div>

@@ -103,11 +103,11 @@ def is_logged_in() -> bool:
         return True
 
 
-def process_note(note) -> tuple:
+def process_note(note) -> dict:
     """
-    Takes data from database and converts it into form for display
-    :param note: Note tuple to be read
-    :return: Updated note tuple
+    Takes data from database and converts it into a structured dictionary for display
+    :param note: Tuple from database query
+    :return: Dict with named fields
     """
     file_path = f'{UPLOAD_FOLDER}/{note[2]}'
     
@@ -119,21 +119,29 @@ def process_note(note) -> tuple:
     
     truncated_content = content[:150] + '...' if len(content) > 150 else content
 
-    tag_id = []
-    try:
-        tags = list(note[4].split('|'))
-        for i, tag in enumerate(tags):
-            tags[i] = tuple(tag.split(':'))
-            tag_id.append(int(tags[i][0]))
-    except AttributeError:
-        tags = []
-    
-    try:
-        data = (note[0], note[1], truncated_content, note[3], tags, tag_id, note[5])
-    except IndexError:
-        data = (note[0], note[1], truncated_content, note[3], tags, tag_id)
+    tags = []
+    tag_ids = []
+    if note[4]:
+        for tag in note[4].split('|'):
+            tag_id, tag_name = tag.split(':')
+            tags.append({'id': int(tag_id), 'name': tag_name})
+            tag_ids.append(int(tag_id))
 
-    return data
+    note_data = {
+        'id': note[0],
+        'title': note[1],
+        'filename': note[2],
+        'content': truncated_content,
+        'subject': note[3],
+        'tags': tags,
+        'tag_ids': tag_ids,
+    }
+
+    if len(note) > 5:
+        note_data['owner'] = note[5]
+        note_data['permission'] = note[6]
+    
+    return note_data
 
 
 @app.route('/')
@@ -177,8 +185,6 @@ def dashboard():
                          GROUP BY n.note_id, n.title, n.content, s.name, n.updated_at
                          ORDER BY n.updated_at DESC;''',
                       (session['userid'], ))
-    for i, note in enumerate(note_list):
-        note_list[i] = process_note(note)
 
     shared_list = fetch('''SELECT 
                                n.note_id,
@@ -186,7 +192,8 @@ def dashboard():
                                n.content,
                                s.name,
                                GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags,
-                               u.fname || ' ' || u.lname AS owner 
+                               u.fname || ' ' || u.lname AS owner,
+                               sn.permission
                            FROM note n
                                     JOIN subject s ON n.fk_subject_id = s.subject_id
                                     LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
@@ -197,11 +204,18 @@ def dashboard():
                            GROUP BY n.note_id, n.title, s.name, n.content, n.updated_at
                            ORDER BY n.updated_at DESC;''',
                         (session['userid'], ))
+    
+    for i, note in enumerate(note_list):
+        note_list[i] = process_note(note)
+
     for i, note in enumerate(shared_list):
         shared_list[i] = process_note(note)
 
     subject_list = fetch('SELECT subject_id, name FROM subject WHERE fk_user_id=?', (session['userid'],))
     tag_list = fetch('SELECT tag_id, name FROM tag WHERE fk_user_id IS NULL OR fk_user_id=?', (session['userid'],))
+
+    subject_list = [{'id': subject[0], 'name': subject[1]} for subject in subject_list]
+    tag_list = [{'id': tag[0], 'name': tag[1]} for tag in tag_list]
 
     return render_template('dashboard.html',
                            title='dashboard',
@@ -390,6 +404,9 @@ def process_tags(note_id):
                     WHERE n.note_id=?''',
                     (note_id, ),
                     False)
+    
+    tag_list = [{'id': tag[0], 'name': tag[1]} for tag in tag_list]
+    note_list = {'id': note_list[0], 'name': note_list[1]}
 
     return render_template('/partials/tag_list.html', tags=tag_list, note=note_list)
 

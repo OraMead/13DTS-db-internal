@@ -1,4 +1,4 @@
-<div id="change-tags-modal-{{ note[0] }}" class="modal">
+<div id="change-tags-modal-{{ note.id }}" class="modal">
     <div class="modal-content">
         <span class="close-btn">&times;</span>
         <h3>Change tags</h3>
@@ -7,9 +7,9 @@
             <div class="form-element">
                 {% for tag in tags %}
                 <label>
-                    <input type="checkbox" class="tag-checkbox" data-tag-id="{{ tag[0] }}" data-note-id="{{ note[0] }}"
-                        {% if tag[0] in note[5] %}checked{% endif %}>
-                    {{ tag[1] }}
+                    <input type="checkbox" class="tag-checkbox" data-tag-id="{{ tag.id }}" data-note-id="{{ note.id }}"
+                        {% if tag.id in note.tag_ids %}checked{% endif %}>
+                    {{ tag.name }}
                 </label><br>
                 {% endfor %}
             </div>

@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, session, url_for, j
 import sqlite3
 from flask_bcrypt import Bcrypt
 import os
+import shutil
 
 DB_PATH = 'notes.db'
 
@@ -17,14 +18,11 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Temp function for editor
 def get_note_content(note_id):
-    result = fetch("SELECT content FROM note WHERE note_id = ?", (note_id, ), False)
-
-    if result:
-        filepath = f'uploads/{result[0]}'
-        if os.path.exists(filepath):
-            with open(filepath, 'r') as file:
-                content = file.read()
-            return filepath, content
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], f'file_{note_id}.txt')
+    if os.path.exists(filepath):
+        with open(filepath, 'r') as file:
+            content = file.read()
+        return filepath, content
     return None, None
 
 
@@ -109,7 +107,7 @@ def process_note(note) -> dict:
     :param note: Tuple from database query
     :return: Dict with named fields
     """
-    file_path = f'{UPLOAD_FOLDER}/{note[2]}'
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], f'file_{note[0]}.txt')
     
     try:
         with open(file_path, 'r') as f:
@@ -121,8 +119,8 @@ def process_note(note) -> dict:
 
     tags = []
     tag_ids = []
-    if note[4]:
-        for tag in note[4].split('|'):
+    if note[3]:
+        for tag in note[3].split('|'):
             tag_id, tag_name = tag.split(':')
             tags.append({'id': int(tag_id), 'name': tag_name})
             tag_ids.append(int(tag_id))
@@ -130,11 +128,10 @@ def process_note(note) -> dict:
     note_data = {
         'id': note[0],
         'title': note[1],
-        'filename': note[2],
-        'content': truncated_content,
-        'subject': note[3],
+        'subject': note[2],
         'tags': tags,
         'tag_ids': tag_ids,
+        'content': truncated_content
     }
 
     if len(note) > 5:
@@ -174,7 +171,6 @@ def dashboard():
     note_list = fetch('''SELECT 
                              n.note_id,
                              n.title,
-                             n.content,
                              s.name,
                              GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags
                          FROM note n
@@ -182,14 +178,13 @@ def dashboard():
                                   LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
                                   LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
                          WHERE n.fk_user_id = ?
-                         GROUP BY n.note_id, n.title, n.content, s.name, n.updated_at
+                         GROUP BY n.note_id, n.title, s.name, n.updated_at
                          ORDER BY n.updated_at DESC;''',
                       (session['userid'], ))
 
     shared_list = fetch('''SELECT 
                                n.note_id,
                                n.title,
-                               n.content,
                                s.name,
                                GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags,
                                u.fname || ' ' || u.lname AS owner,
@@ -201,7 +196,7 @@ def dashboard():
                                     JOIN user u ON n.fk_user_id = u.user_id
                                     JOIN shared_note sn ON n.note_id = sn .fk_note_id
                            WHERE sn.fk_user_id = ?
-                           GROUP BY n.note_id, n.title, s.name, n.content, n.updated_at
+                           GROUP BY n.note_id, n.title, s.name, n.updated_at
                            ORDER BY n.updated_at DESC;''',
                         (session['userid'], ))
     
@@ -337,7 +332,7 @@ def upload():
         cur.execute('INSERT INTO subject (fk_user_id, name) VALUES (?, ?)', (session['userid'], new_subject))
         subject = cur.lastrowid
 
-    cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title, type) VALUES (?, ?, ?, 0)', (session['userid'], subject, title))
+    cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (session['userid'], subject, title))
     note_id = cur.lastrowid
 
     if file and file.filename and allowed_file(file.filename):
@@ -350,7 +345,6 @@ def upload():
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write('')
 
-    cur.execute('UPDATE note SET content = ? WHERE note_id = ?', (new_filename, note_id))
     con.commit()
     con.close()
     
@@ -421,14 +415,12 @@ def delete(note_id):
         return "Unauthorized", 403
 
 
-    result = fetch("SELECT content FROM note WHERE note_id = ?", (note_id,), fetch_all=False)
-    if result:
-        insert('DELETE FROM note_tag WHERE fk_note_id = ?', (note_id, ))
-        insert('DELETE FROM note WHERE note_id = ?', (note_id, ))
-        filename = result[0]
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        if os.path.exists(file_path):
-            os.remove(file_path)
+    insert('DELETE FROM note_tag WHERE fk_note_id = ?', (note_id, ))
+    insert('DELETE FROM note WHERE note_id = ?', (note_id, ))
+    filename = f'file_{note_id}.txt'
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
         
 
     return redirect('/dashboard')
@@ -445,6 +437,7 @@ def copy(note_id):
 
     tags = []
     shared = []
+    source = os.path.join(app.config['UPLOAD_FOLDER'], f'file_{note_id}.txt')
 
     con = create_connection(DB_PATH)
     cur = con.cursor()
@@ -462,7 +455,8 @@ def copy(note_id):
     cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (note[1], note[2], title or f'Copy of {note[3]}'))
     note_id = cur.lastrowid
 
-    # Copy file code - todo
+    destination = os.path.join(app.config['UPLOAD_FOLDER'], f'file_{note_id}.txt')
+    shutil.copyfile(source, destination)
 
     for tag in tags:
         cur.execute('INSERT INTO note_tag (fk_note_id, fk_tag_id) VALUES (?, ?)', (note_id, tag[1]))

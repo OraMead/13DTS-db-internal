@@ -440,10 +440,38 @@ def copy(note_id):
         return redirect('/login')
     
     title = request.form.get('title')
-    tags = request.form.get('tags')
-    shared = request.form.get('shared')
+    copy_tags = request.form.get('tags')
+    copy_shared = request.form.get('shared')
 
-    print(f'Copy {note_id}', title, tags, shared)
+    tags = []
+    shared = []
+
+    con = create_connection(DB_PATH)
+    cur = con.cursor()
+    cur.execute('SELECT * FROM note WHERE note_id=?', (note_id, ))
+    note = cur.fetchone()
+
+    if copy_tags:
+        cur.execute('SELECT * FROM note_tag WHERE fk_note_id=?', (note_id, ))
+        tags = cur.fetchall()
+
+    if copy_shared:
+        cur.execute('SELECT * FROM shared_note WHERE fk_note_id=?', (note_id, ))
+        shared = cur.fetchall()
+
+    cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (note[1], note[2], title or f'Copy of {note[3]}'))
+    note_id = cur.lastrowid
+
+    # Copy file code - todo
+
+    for tag in tags:
+        cur.execute('INSERT INTO note_tag (fk_note_id, fk_tag_id) VALUES (?, ?)', (note_id, tag[1]))
+    
+    for share in shared:
+        cur.execute('INSERT INTO shared_note (fk_note_id, fk_user_id, permission) VALUES (?, ?, ?)', (note_id, share[1], share[2]))
+
+    con.commit()
+    con.close()
 
     return redirect('/dashboard')
 

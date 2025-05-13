@@ -119,11 +119,18 @@ def process_note(note) -> dict:
 
     tags = []
     tag_ids = []
+    shared = []
+
     if note[3]:
         for tag in note[3].split('|'):
             tag_id, tag_name = tag.split(':')
             tags.append({'id': int(tag_id), 'name': tag_name})
             tag_ids.append(int(tag_id))
+
+    if note[4]:
+        for user in note[4].split('|'):
+            user_id, user_name, user_permission = user.split(':')
+            shared.append({'id': int(user_id), 'name': user_name, 'permission': int(user_permission)})
 
     note_data = {
         'id': note[0],
@@ -131,6 +138,7 @@ def process_note(note) -> dict:
         'subject': note[2],
         'tags': tags,
         'tag_ids': tag_ids,
+        'shared': shared,
         'content': truncated_content
     }
 
@@ -169,24 +177,29 @@ def dashboard():
         return redirect('/')
     
     note_list = fetch('''SELECT 
-                             n.note_id,
-                             n.title,
-                             s.name,
-                             GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags
-                         FROM note n
-                                  JOIN subject s ON n.fk_subject_id = s.subject_id
-                                  LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
-                                  LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
-                         WHERE n.fk_user_id = ?
-                         GROUP BY n.note_id, n.title, s.name, n.updated_at
-                         ORDER BY n.updated_at DESC;''',
+                            n.note_id,
+                            n.title,
+                            s.name,
+                            GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags,
+                            GROUP_CONCAT(u.user_id || ':' || u.fname || ' ' || u.lname || ':' || sn.permission, '|') AS shared
+                        FROM note n
+                                JOIN subject s ON n.fk_subject_id = s.subject_id
+                                LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
+                                LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
+                                LEFT JOIN shared_note sn ON n.note_id = sn.fk_note_id
+                                LEFT JOIN user u ON sn.fk_user_id = user_id
+                        WHERE n.fk_user_id = ?
+                        GROUP BY n.note_id, n.title, s.name, n.updated_at
+                        ORDER BY n.updated_at DESC;''',
                       (session['userid'], ))
 
+    # Add changing sharing support
     shared_list = fetch('''SELECT 
                                n.note_id,
                                n.title,
                                s.name,
                                GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags,
+                               null,
                                u.fname || ' ' || u.lname AS owner,
                                sn.permission
                            FROM note n
@@ -393,16 +406,16 @@ def process_tags(note_id):
           FROM tag t JOIN note_tag nt ON t.tag_id=nt.fk_tag_id 
           WHERE nt.fk_note_id=? ORDER BY t.tag_id;''',
           (note_id, ))
-    note_list = fetch('''SELECT n.note_id, s.name 
+    note_list = fetch('''SELECT n.note_id, s.name
                     FROM note n JOIN subject s ON fk_subject_id = subject_id
                     WHERE n.note_id=?''',
                     (note_id, ),
                     False)
     
     tag_list = [{'id': tag[0], 'name': tag[1]} for tag in tag_list]
-    note_list = {'id': note_list[0], 'name': note_list[1]}
+    note_list = {'id': note_list[0], 'subject': note_list[1], 'tags': tag_list}
 
-    return render_template('/partials/tag_list.html', tags=tag_list, note=note_list)
+    return render_template('/partials/update/tag_list.html', tags=tag_list, note=note_list)
 
 
 @app.route('/delete/<int:note_id>', methods=['POST'])
@@ -461,13 +474,49 @@ def copy(note_id):
     for tag in tags:
         cur.execute('INSERT INTO note_tag (fk_note_id, fk_tag_id) VALUES (?, ?)', (note_id, tag[1]))
     
-    for share in shared:
-        cur.execute('INSERT INTO shared_note (fk_note_id, fk_user_id, permission) VALUES (?, ?, ?)', (note_id, share[1], share[2]))
+    for user in shared:
+        cur.execute('INSERT INTO shared_note (fk_note_id, fk_user_id, permission) VALUES (?, ?, ?)', (note_id, user[1], user[2]))
 
     con.commit()
     con.close()
 
     return redirect('/dashboard')
+
+
+@app.route('/update-permission', methods=['POST'])
+def update_permission():
+    data = request.get_json()
+    insert('UPDATE share SET permission = ? WHERE id = ? AND note_id = ?', (data['permission'], data['user_id'], data['note_id']))
+
+    return '', 204
+
+@app.route('/unshare', methods=['POST'])
+def unshare():
+    data = request.get_json()
+    insert('DELETE FROM share_note WHERE id = ? AND note_id = ?', (data['user_id'], data['note_id']))
+
+    return '', 204
+
+@app.route('/share', methods=['POST'])
+def share():
+    data = request.get_json()
+    username = data['username']
+    permission = data['permission']
+    note_id = data['note_id']
+
+    # Look up or validate the user
+    user = db.execute('SELECT id FROM user WHERE username = ?', (username,)).fetchone()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    # Add to share table
+    cursor = db.execute(
+        'INSERT INTO share (note_id, user_id, permission) VALUES (?, ?, ?)',
+        (note_id, user['id'], permission)
+    )
+    db.commit()
+    user_id = cursor.lastrowid
+    return jsonify({'user_id': user_id, 'name': username})
 
 
 if __name__ == '__main__':

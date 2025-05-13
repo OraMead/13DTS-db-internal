@@ -2,20 +2,12 @@
     <a href="{{ url_for('edit_note', note_id=note.id) }}">
         <h3 class="note-box-title">{{ note.title }}</h3>
         {% if note.owner %}
-        <h6><strong>Owner:</strong> {{ note.owner }}</h6>
+        <h5><strong>Owner:</strong> {{ note.owner }}</h5>
         {% endif %}
         <p>{{ note.content }}</p>
     </a>
 
-    <ul class="tag-list">
-        <li class="tag-subject"><strong>{{ note.subject }}</strong></li>
-        {% for tag in note.tags %}
-        <li class="tag-item">
-            <span>{{ tag.name }}</span>
-            <button class="remove-tag-btn" data-note-id="{{ note.id }}" data-tag-id="{{ tag.id }}">&times;</button>
-        </li>
-        {% endfor %}
-    </ul>
+    {% include 'partials/update/tag_list.html' %}
 
     <div class="note-actions">
         <button class="open-modal-btn" data-modal="change-tags-modal-{{ note.id }}" title="Change Tags"><i class="fas fa-tag"></i></button>

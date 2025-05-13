@@ -34,7 +34,7 @@
         {% for note in shared[:5] %}
             {% include 'partials/note_box.html' %}
         {% endfor %}
-        {% if notes|length > 5 %}
+        {% if shared|length > 5 %}
             {% include 'partials/more_notes.html' %}
         {% endif %}
     {% else %}

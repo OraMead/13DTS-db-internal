@@ -1,0 +1,14 @@
+<div class="share-list" data-note-id="{{ note.id }}">
+    {% for user in note.shared %}
+    <div class="share-box" data-user-id="{{ user.id }}">
+        <span>{{ user.name }}</span>
+
+        <select class="permission-select">
+            <option value=0 {% if user.permission == 0 %}selected{% endif %}>Read</option>
+            <option value=1 {% if user.permission == 1 %}selected{% endif %}>Edit</option>
+            <option value=2 {% if user.permission == 2 %}selected{% endif %}>Manage</option>
+            <option value="remove">Remove</option>
+        </select>
+    </div>
+    {% endfor %}
+</div>

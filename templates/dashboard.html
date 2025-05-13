@@ -15,9 +15,12 @@
     <h3>Recent notes</h3>
     <div class="notes">
     {% if notes|length != 0 %}
-        {% for note in notes %}
+        {% for note in notes[:5] %}
             {% include 'partials/note_box.html' %}
         {% endfor %}
+        {% if notes|length > 5 %}
+            {% include 'partials/more_notes.html' %}
+        {% endif %}
     {% else %}
     <p>No notes to view. Create a note to start editing</p>
     {% endif %}
@@ -28,9 +31,12 @@
     <h3>Shared with me</h3>
     <div class="notes">
     {% if shared|length != 0 %}
-        {% for note in shared %}
+        {% for note in shared[:5] %}
             {% include 'partials/note_box.html' %}
         {% endfor %}
+        {% if notes|length > 5 %}
+            {% include 'partials/more_notes.html' %}
+        {% endif %}
     {% else %}
     <p>No shared notes to view. Create a note to start editing</p>
     {% endif %}

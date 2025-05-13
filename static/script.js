@@ -95,3 +95,83 @@ function refreshTagList(noteId) {
             console.error('Failed to refresh tag list:', error);
         });
 }
+
+// Sharing
+document.querySelectorAll('.permission-select').forEach(select => {
+    select.addEventListener('change', async (e) => {
+        const shareBox = e.target.closest('.share-box');
+        const userId = shareBox.dataset.userId;
+        const noteId = e.target.closest('.share-list').dataset.noteId;
+        const newPermission = e.target.value;
+
+        if (newPermission === 'remove') {
+            const res = await fetch(`/unshare`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note_id: noteId, user_id: userId })
+            });
+            if (res.ok) {
+                shareBox.remove();
+            }
+        } else {
+            await fetch(`/update-permission`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note_id: noteId, user_id: userId, permission: newPermission })
+            });
+        }
+    });
+});
+
+// document.getElementById('add-share-btn').addEventListener('click', async () => {
+//     const noteId = document.querySelector('.share-list').dataset.noteId;
+//     const username = document.getElementById('new-user-name').value;
+//     const permission = document.getElementById('new-user-permission').value;
+
+//     const res = await fetch(`/share`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ note_id: noteId, username: username, permission: permission })
+//     });
+
+//     if (res.ok) {
+//         const data = await res.json();
+//         const shareList = document.querySelector('.share-list');
+//         const newDiv = document.createElement('div');
+//         newDiv.className = 'share-box';
+//         newDiv.dataset.userID = data.user_id;
+//         newDiv.innerHTML = `
+//             <span>${data.name}</span>
+//             <select class="permission-select">
+//                 <option value="read"${permission === 'read' ? ' selected' : ''}>Read</option>
+//                 <option value="edit"${permission === 'edit' ? ' selected' : ''}>Edit</option>
+//                 <option value="remove">Remove</option>
+//             </select>
+//         `;
+//         shareList.appendChild(newDiv);
+
+//         // Attach event listener to new select
+//         newDiv.querySelector('.permission-select').addEventListener('change', async (e) => {
+//             const shareBox = e.target.closest('.share-box');
+//             const userID = shareBox.dataset.userID;
+//             const newPermission = e.target.value;
+
+//             if (newPermission === 'remove') {
+//                 const res = await fetch(`/unshare`, {
+//                     method: 'POST',
+//                     headers: { 'Content-Type': 'application/json' },
+//                     body: JSON.stringify({ note_id: noteId, user_id: userID })
+//                 });
+//                 if (res.ok) {
+//                     shareBox.remove();
+//                 }
+//             } else {
+//                 await fetch(`/update-permission`, {
+//                     method: 'POST',
+//                     headers: { 'Content-Type': 'application/json' },
+//                     body: JSON.stringify({ note_id: noteId, user_id: userID, permission: newPermission })
+//                 });
+//             }
+//         });
+//     }
+// });

@@ -483,40 +483,41 @@ def copy(note_id):
     return redirect('/dashboard')
 
 
+# Sharing
 @app.route('/update-permission', methods=['POST'])
 def update_permission():
     data = request.get_json()
-    insert('UPDATE share SET permission = ? WHERE id = ? AND note_id = ?', (data['permission'], data['user_id'], data['note_id']))
+    insert('UPDATE shared_note SET permission=? WHERE fk_user_id=? AND fk_note_id=?', (data['permission'], data['user_id'], data['note_id']))
 
     return '', 204
 
 @app.route('/unshare', methods=['POST'])
 def unshare():
     data = request.get_json()
-    insert('DELETE FROM share_note WHERE id = ? AND note_id = ?', (data['user_id'], data['note_id']))
+    insert('DELETE FROM shared_note WHERE fk_user_id=? AND fk_note_id=?', (data['user_id'], data['note_id']))
 
     return '', 204
 
-@app.route('/share', methods=['POST'])
-def share():
-    data = request.get_json()
-    username = data['username']
-    permission = data['permission']
-    note_id = data['note_id']
+# @app.route('/share', methods=['POST'])
+# def share():
+#     data = request.get_json()
+#     username = data['username']
+#     permission = data['permission']
+#     note_id = data['note_id']
 
-    # Look up or validate the user
-    user = db.execute('SELECT id FROM user WHERE username = ?', (username,)).fetchone()
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
+#     # Look up or validate the user
+#     user = db.execute('SELECT id FROM user WHERE username = ?', (username,)).fetchone()
+#     if not user:
+#         return jsonify({'error': 'User not found'}), 404
 
-    # Add to share table
-    cursor = db.execute(
-        'INSERT INTO share (note_id, user_id, permission) VALUES (?, ?, ?)',
-        (note_id, user['id'], permission)
-    )
-    db.commit()
-    user_id = cursor.lastrowid
-    return jsonify({'user_id': user_id, 'name': username})
+#     # Add to share table
+#     cursor = db.execute(
+#         'INSERT INTO share (note_id, user_id, permission) VALUES (?, ?, ?)',
+#         (note_id, user['id'], permission)
+#     )
+#     db.commit()
+#     user_id = cursor.lastrowid
+#     return jsonify({'user_id': user_id, 'name': username})
 
 
 if __name__ == '__main__':

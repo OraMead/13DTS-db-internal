@@ -498,26 +498,32 @@ def unshare():
 
     return '', 204
 
-# @app.route('/share', methods=['POST'])
-# def share():
-#     data = request.get_json()
-#     username = data['username']
-#     permission = data['permission']
-#     note_id = data['note_id']
+@app.route('/share', methods=['POST'])
+def share():
+    data = request.get_json()
+    user_id = data['user_id']
+    permission = data['permission']
+    note_id = data['note_id']
 
-#     # Look up or validate the user
-#     user = db.execute('SELECT id FROM user WHERE username = ?', (username,)).fetchone()
-#     if not user:
-#         return jsonify({'error': 'User not found'}), 404
+    user = fetch('''SELECT 
+                    user_id, 
+                    GROUP_CONCAT(fname || ' ' || lname, '|') AS name 
+                FROM user WHERE user_id=? 
+                GROUP BY user_id''',
+                (user_id, ), 
+                False)
+    print(user)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
 
-#     # Add to share table
-#     cursor = db.execute(
-#         'INSERT INTO share (note_id, user_id, permission) VALUES (?, ?, ?)',
-#         (note_id, user['id'], permission)
-#     )
-#     db.commit()
-#     user_id = cursor.lastrowid
-#     return jsonify({'user_id': user_id, 'name': username})
+    # # Add to share table
+    # cursor = db.execute(
+    #     'INSERT INTO share (note_id, user_id, permission) VALUES (?, ?, ?)',
+    #     (note_id, user['id'], permission)
+    # )
+    # db.commit()
+    # user_id = cursor.lastrowid
+    return jsonify({'user_id': user[0], 'name': user[1]})
 
 
 if __name__ == '__main__':

@@ -123,55 +123,52 @@ document.querySelectorAll('.permission-select').forEach(select => {
     });
 });
 
-// document.getElementById('add-share-btn').addEventListener('click', async () => {
-//     const noteId = document.querySelector('.share-list').dataset.noteId;
-//     const username = document.getElementById('new-user-name').value;
-//     const permission = document.getElementById('new-user-permission').value;
+document.querySelectorAll('.note-box').forEach(container => {
+    const noteId = container.dataset.noteId;
+    const addButton = container.querySelector('.add-share-btn');
 
-//     const res = await fetch(`/share`, {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({ note_id: noteId, username: username, permission: permission })
-//     });
+    addButton.addEventListener('click', async () => {
+        const userIdInput = container.querySelector('.new-user-id');
+        const permissionSelect = container.querySelector('.new-user-permission');
+        const userId = userIdInput.value.trim();
+        const permission = permissionSelect.value;
 
-//     if (res.ok) {
-//         const data = await res.json();
-//         const shareList = document.querySelector('.share-list');
-//         const newDiv = document.createElement('div');
-//         newDiv.className = 'share-box';
-//         newDiv.dataset.userID = data.user_id;
-//         newDiv.innerHTML = `
-//             <span>${data.name}</span>
-//             <select class="permission-select">
-//                 <option value="read"${permission === 'read' ? ' selected' : ''}>Read</option>
-//                 <option value="edit"${permission === 'edit' ? ' selected' : ''}>Edit</option>
-//                 <option value="remove">Remove</option>
-//             </select>
-//         `;
-//         shareList.appendChild(newDiv);
+        if (!userId) return alert("Please enter a username.");
 
-//         // Attach event listener to new select
-//         newDiv.querySelector('.permission-select').addEventListener('change', async (e) => {
-//             const shareBox = e.target.closest('.share-box');
-//             const userID = shareBox.dataset.userID;
-//             const newPermission = e.target.value;
+        const res = await fetch('/share', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                note_id: noteId,
+                user_id: userId,
+                permission: permission
+            })
+        });
 
-//             if (newPermission === 'remove') {
-//                 const res = await fetch(`/unshare`, {
-//                     method: 'POST',
-//                     headers: { 'Content-Type': 'application/json' },
-//                     body: JSON.stringify({ note_id: noteId, user_id: userID })
-//                 });
-//                 if (res.ok) {
-//                     shareBox.remove();
-//                 }
-//             } else {
-//                 await fetch(`/update-permission`, {
-//                     method: 'POST',
-//                     headers: { 'Content-Type': 'application/json' },
-//                     body: JSON.stringify({ note_id: noteId, user_id: userID, permission: newPermission })
-//                 });
-//             }
-//         });
-//     }
-// });
+        // if (res.ok) {
+        //     const data = await res.json();
+        //     const shareList = container.querySelector('.share-list');
+
+        //     const newDiv = document.createElement('div');
+        //     newDiv.className = 'share-box';
+        //     newDiv.dataset.userId = data.user_id;
+
+        //     newDiv.innerHTML = `
+        //         <span>${data.name}</span>
+        //         <select class="permission-select">
+        //             <option value="0"${permission === '0' ? ' selected' : ''}>Read</option>
+        //             <option value="1"${permission === '1' ? ' selected' : ''}>Edit</option>
+        //             <option value="2"${permission === '2' ? ' selected' : ''}>Manage</option>
+        //             <option value="remove">Remove</option>
+        //         </select>
+        //     `;
+
+        //     shareList.appendChild(newDiv);
+
+        //     usernameInput.value = '';
+        // } else {
+        //     const error = await res.json();
+        //     alert("Error: " + (error.message || error.error || 'Unknown error'));
+        // }
+    });
+});

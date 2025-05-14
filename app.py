@@ -377,7 +377,7 @@ def edit_note(note_id):
         with open(filepath, 'w') as file:
             file.write(content)
         insert('UPDATE note set updated_at = CURRENT_TIMESTAMP WHERE note_id = ?', (note_id, ))
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
 
     filepath, content = get_note_content(note_id)
     if filepath:
@@ -505,25 +505,27 @@ def share():
     permission = data['permission']
     note_id = data['note_id']
 
-    user = fetch('''SELECT 
-                    user_id, 
-                    GROUP_CONCAT(fname || ' ' || lname, '|') AS name 
-                FROM user WHERE user_id=? 
-                GROUP BY user_id''',
+    user = fetch('SELECT user_id FROM user WHERE user_id=? ',
                 (user_id, ), 
                 False)
-    print(user)
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    # # Add to share table
-    # cursor = db.execute(
-    #     'INSERT INTO share (note_id, user_id, permission) VALUES (?, ?, ?)',
-    #     (note_id, user['id'], permission)
-    # )
-    # db.commit()
-    # user_id = cursor.lastrowid
-    return jsonify({'user_id': user[0], 'name': user[1]})
+    insert('INSERT INTO shared_note (fk_user_id, fk_note_id, permission) VALUES (?, ?, ?)', (user_id, note_id, permission))
+    return jsonify({'user_id': user[0]})
+
+
+@app.route('/process-shared/<int:note_id>')
+def process_shared(note_id):
+    shared_list = fetch('''SELECT u.user_id, GROUP_CONCAT(u.fname || ' ' || u.lname, '|'), sn.permission
+          FROM shared_note sn LEFT JOIN user u ON u.user_id=sn.fk_user_id 
+          WHERE sn.fk_note_id=? GROUP BY u.user_id;''',
+          (note_id, ))
+    
+    shared_list = [{'id': user[0], 'name': user[1], 'permission': user[2]} for user in shared_list]
+    note_list = {'id': note_id, 'shared': shared_list}
+
+    return render_template('/partials/update/share_list.html', note=note_list)
 
 
 if __name__ == '__main__':

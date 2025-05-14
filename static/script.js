@@ -1,8 +1,11 @@
 // On start logic
-// document.addEventListener('DOMContentLoaded', () => {
-//     bindRemoveTagButtons();
-// });
-
+document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('remove-tag-btn')) { // Tags
+        const noteId = e.target.dataset.noteId;
+        const tagId = e.target.dataset.tagId;
+        toggleTag(noteId, tagId, false);
+    }
+});
 
 // Modal popup boxes
 document.querySelectorAll('.open-modal-btn').forEach(btn => {
@@ -36,15 +39,6 @@ document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
         const checked = checkbox.checked;
         toggleTag(noteId, tagId, checked)
     });
-});
-
-
-document.addEventListener('click', function (e) {
-    if (e.target.classList.contains('remove-tag-btn')) {
-        const noteId = e.target.dataset.noteId;
-        const tagId = e.target.dataset.tagId;
-        toggleTag(noteId, tagId, false);
-    }
 });
 
 
@@ -111,7 +105,7 @@ document.querySelectorAll('.permission-select').forEach(select => {
                 body: JSON.stringify({ note_id: noteId, user_id: userId })
             });
             if (res.ok) {
-                shareBox.remove();
+                refreshSharedList(noteId)
             }
         } else {
             await fetch(`/update-permission`, {
@@ -145,30 +139,29 @@ document.querySelectorAll('.note-box').forEach(container => {
             })
         });
 
-        // if (res.ok) {
-        //     const data = await res.json();
-        //     const shareList = container.querySelector('.share-list');
-
-        //     const newDiv = document.createElement('div');
-        //     newDiv.className = 'share-box';
-        //     newDiv.dataset.userId = data.user_id;
-
-        //     newDiv.innerHTML = `
-        //         <span>${data.name}</span>
-        //         <select class="permission-select">
-        //             <option value="0"${permission === '0' ? ' selected' : ''}>Read</option>
-        //             <option value="1"${permission === '1' ? ' selected' : ''}>Edit</option>
-        //             <option value="2"${permission === '2' ? ' selected' : ''}>Manage</option>
-        //             <option value="remove">Remove</option>
-        //         </select>
-        //     `;
-
-        //     shareList.appendChild(newDiv);
-
-        //     usernameInput.value = '';
-        // } else {
-        //     const error = await res.json();
-        //     alert("Error: " + (error.message || error.error || 'Unknown error'));
-        // }
+        if (res.ok) {
+            refreshSharedList(noteId)
+            userIdInput.value = '';
+        } else {
+            const error = await res.json();
+            alert("Error: " + (error.message || error.error || 'Unknown error'));
+        }
     });
 });
+
+
+function refreshSharedList(noteId) {
+    fetch(`/process-shared/${noteId}`)
+        .then(response => response.text())
+        .then(html => {
+            const noteContainer = document.querySelector(`.note-box[data-note-id="${noteId}"]`);
+            const shareListContainer = noteContainer.querySelector('.share-list');
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const newList = tempDiv.querySelector('.share-list');
+            shareListContainer.replaceWith(newList);
+        })
+        .catch(error => {
+            console.error('Failed to refresh shared list:', error);
+        });
+}

@@ -180,37 +180,49 @@ def dashboard():
                             n.note_id,
                             n.title,
                             s.name,
-                            GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags,
-                            GROUP_CONCAT(u.user_id || ':' || u.fname || ' ' || u.lname || ':' || sn.permission, '|') AS shared
+                            (
+                                SELECT GROUP_CONCAT(t.tag_id || ':' || t.name, '|')
+                                FROM note_tag nt
+                                JOIN tag t ON nt.fk_tag_id = t.tag_id
+                                WHERE nt.fk_note_id = n.note_id
+                            ) AS tags,
+                            (
+                                SELECT GROUP_CONCAT(u.user_id || ':' || u.fname || ' ' || u.lname || ':' || sn.permission, '|')
+                                FROM shared_note sn
+                                JOIN user u ON sn.fk_user_id = u.user_id
+                                WHERE sn.fk_note_id = n.note_id
+                            ) AS shared
                         FROM note n
-                                JOIN subject s ON n.fk_subject_id = s.subject_id
-                                LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
-                                LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
-                                LEFT JOIN shared_note sn ON n.note_id = sn.fk_note_id
-                                LEFT JOIN user u ON sn.fk_user_id = user_id
+                        JOIN subject s ON n.fk_subject_id = s.subject_id
                         WHERE n.fk_user_id = ?
-                        GROUP BY n.note_id, n.title, s.name, n.updated_at
                         ORDER BY n.updated_at DESC;''',
                       (session['userid'], ))
 
     # Add changing sharing support
     shared_list = fetch('''SELECT 
-                               n.note_id,
-                               n.title,
-                               s.name,
-                               GROUP_CONCAT(t.tag_id || ':' || t.name, '|') AS tags,
-                               null,
-                               u.fname || ' ' || u.lname AS owner,
-                               sn.permission
-                           FROM note n
-                                    JOIN subject s ON n.fk_subject_id = s.subject_id
-                                    LEFT JOIN note_tag nt ON n.note_id = nt.fk_note_id
-                                    LEFT JOIN tag t ON nt.fk_tag_id = t.tag_id
-                                    JOIN user u ON n.fk_user_id = u.user_id
-                                    JOIN shared_note sn ON n.note_id = sn .fk_note_id
-                           WHERE sn.fk_user_id = ?
-                           GROUP BY n.note_id, n.title, s.name, n.updated_at
-                           ORDER BY n.updated_at DESC;''',
+                                n.note_id,
+                                n.title,
+                                s.name,
+                                (
+                                    SELECT GROUP_CONCAT(t.tag_id || ':' || t.name, '|')
+                                    FROM note_tag nt
+                                    JOIN tag t ON nt.fk_tag_id = t.tag_id
+                                    WHERE nt.fk_note_id = n.note_id
+                                ) AS tags,
+                                (
+                                    SELECT GROUP_CONCAT(u.user_id || ':' || u.fname || ' ' || u.lname || ':' || sn2.permission, '|')
+                                    FROM shared_note sn2
+                                    JOIN user u ON sn2.fk_user_id = u.user_id
+                                    WHERE sn2.fk_note_id = n.note_id
+                                ) AS shared,
+                                u.fname || ' ' || u.lname AS owner,
+                                sn.permission
+                            FROM note n
+                            JOIN subject s ON n.fk_subject_id = s.subject_id
+                            JOIN user u ON n.fk_user_id = u.user_id
+                            JOIN shared_note sn ON n.note_id = sn.fk_note_id
+                            WHERE sn.fk_user_id = ?
+                            ORDER BY n.updated_at DESC;''',
                         (session['userid'], ))
     
     for i, note in enumerate(note_list):
@@ -484,35 +496,34 @@ def copy(note_id):
 
 
 # Sharing
-@app.route('/update-permission', methods=['POST'])
-def update_permission():
-    data = request.get_json()
-    insert('UPDATE shared_note SET permission=? WHERE fk_user_id=? AND fk_note_id=?', (data['permission'], data['user_id'], data['note_id']))
-
-    return '', 204
-
-@app.route('/unshare', methods=['POST'])
-def unshare():
-    data = request.get_json()
-    insert('DELETE FROM shared_note WHERE fk_user_id=? AND fk_note_id=?', (data['user_id'], data['note_id']))
-
-    return '', 204
-
-@app.route('/share', methods=['POST'])
-def share():
+@app.route('/modify-share', methods=['POST'])
+def modify_share():
     data = request.get_json()
     user_id = data['user_id']
-    permission = data['permission']
     note_id = data['note_id']
+    action = data['action']
+    permission = data.get('permission')
 
-    user = fetch('SELECT user_id FROM user WHERE user_id=? ',
-                (user_id, ), 
-                False)
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
+    if action == 'share':
+        user = fetch('SELECT user_id FROM user WHERE user_id=?', (user_id,), False)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
 
-    insert('INSERT INTO shared_note (fk_user_id, fk_note_id, permission) VALUES (?, ?, ?)', (user_id, note_id, permission))
-    return jsonify({'user_id': user[0]})
+        insert('INSERT INTO shared_note (fk_user_id, fk_note_id, permission) VALUES (?, ?, ?)',
+               (user_id, note_id, permission))
+        return '', 204
+    
+    elif action == 'update':
+        insert('UPDATE shared_note SET permission=? WHERE fk_user_id=? AND fk_note_id=?',
+               (permission, user_id, note_id))
+        return '', 204
+
+    elif action == 'unshare':
+        insert('DELETE FROM shared_note WHERE fk_user_id=? AND fk_note_id=?',
+               (user_id, note_id))
+        return '', 204
+
+    return jsonify({'error': 'Invalid action'}), 400
 
 
 @app.route('/process-shared/<int:note_id>')

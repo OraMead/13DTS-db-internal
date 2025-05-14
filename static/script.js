@@ -1,12 +1,3 @@
-// On start logic
-document.addEventListener('click', function (e) {
-    if (e.target.classList.contains('remove-tag-btn')) { // Tags
-        const noteId = e.target.dataset.noteId;
-        const tagId = e.target.dataset.tagId;
-        toggleTag(noteId, tagId, false);
-    }
-});
-
 // Modal popup boxes
 document.querySelectorAll('.open-modal-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -41,6 +32,13 @@ document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
     });
 });
 
+document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('remove-tag-btn')) { // Tags
+        const noteId = e.target.dataset.noteId;
+        const tagId = e.target.dataset.tagId;
+        toggleTag(noteId, tagId, false);
+    }
+});
 
 function toggleTag(noteId, tagId, checked) {
     fetch('/toggle', {
@@ -91,64 +89,28 @@ function refreshTagList(noteId) {
 }
 
 // Sharing
-document.querySelectorAll('.permission-select').forEach(select => {
-    select.addEventListener('change', async (e) => {
-        const shareBox = e.target.closest('.share-box');
-        const userId = shareBox.dataset.userId;
-        const noteId = e.target.closest('.share-list').dataset.noteId;
-        const newPermission = e.target.value;
+async function modifyShare(action, noteId, userId, permission = null) {
+    const payload = { action, note_id: noteId, user_id: userId };
+    if (permission !== null) payload.permission = permission;
 
-        if (newPermission === 'remove') {
-            const res = await fetch(`/unshare`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ note_id: noteId, user_id: userId })
-            });
-            if (res.ok) {
-                refreshSharedList(noteId)
-            }
-        } else {
-            await fetch(`/update-permission`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ note_id: noteId, user_id: userId, permission: newPermission })
-            });
-        }
-    });
-});
-
-document.querySelectorAll('.note-box').forEach(container => {
-    const noteId = container.dataset.noteId;
-    const addButton = container.querySelector('.add-share-btn');
-
-    addButton.addEventListener('click', async () => {
-        const userIdInput = container.querySelector('.new-user-id');
-        const permissionSelect = container.querySelector('.new-user-permission');
-        const userId = userIdInput.value.trim();
-        const permission = permissionSelect.value;
-
-        if (!userId) return alert("Please enter a username.");
-
-        const res = await fetch('/share', {
+    try {
+        const res = await fetch('/modify-share', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                note_id: noteId,
-                user_id: userId,
-                permission: permission
-            })
+            body: JSON.stringify(payload)
         });
 
         if (res.ok) {
-            refreshSharedList(noteId)
-            userIdInput.value = '';
+            refreshSharedList(noteId);
         } else {
             const error = await res.json();
             alert("Error: " + (error.message || error.error || 'Unknown error'));
         }
-    });
-});
-
+    } catch (err) {
+        console.error("Sharing error:", err);
+        alert("An error occurred while sharing.");
+    }
+}
 
 function refreshSharedList(noteId) {
     fetch(`/process-shared/${noteId}`)
@@ -165,3 +127,40 @@ function refreshSharedList(noteId) {
             console.error('Failed to refresh shared list:', error);
         });
 }
+
+document.addEventListener('change', (e) => {
+    if (e.target.classList.contains('permission-select')) {
+        const shareBox = e.target.closest('.share-box');
+        const userId = shareBox.dataset.userId;
+        const noteId = e.target.closest('.share-list').dataset.noteId;
+        const permission = e.target.value;
+
+        if (permission === 'remove') {
+            modifyShare('unshare', noteId, userId);
+        } else {
+            modifyShare('update', noteId, userId, permission);
+        }
+    }
+});
+
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('add-share-btn')) {
+        const container = e.target.closest('.note-box');
+        const noteId = container.dataset.noteId;
+        const userIdInput = container.querySelector('.new-user-id');
+        const permissionSelect = container.querySelector('.new-user-permission');
+
+        const userId = userIdInput.value.trim();
+        const permission = permissionSelect.value;
+
+        if (!userId) {
+            alert("Please enter a user ID.");
+            return;
+        }
+
+        modifyShare('share', noteId, userId, permission)
+            .then(() => {
+                userIdInput.value = '';
+            });
+    }
+});

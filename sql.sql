@@ -1,5 +1,7 @@
-SELECT user_id,
-       GROUP_CONCAT(fname || ' ' || lname, '|') AS name
-FROM user
-WHERE user_id=1
-GROUP BY user_id
+CREATE TRIGGER update_shared_note_updated_at
+AFTER UPDATE OF permission ON shared_note
+BEGIN
+    UPDATE shared_note
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE fk_note_id = NEW.fk_note_id AND fk_user_id = NEW.fk_user_id;
+END;

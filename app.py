@@ -383,6 +383,8 @@ def edit_note(note_id):
     :param note_id: Note id for editing
     :return: Render of editor page
     """
+    if not is_logged_in():
+        return redirect('/dashboard')
     if request.method == 'POST':
         content = request.form['content']
         filepath = request.form['filepath']
@@ -498,6 +500,8 @@ def copy(note_id):
 # Sharing
 @app.route('/modify-share', methods=['POST'])
 def modify_share():
+    if not is_logged_in():
+        return jsonify({'error': 'Not logged in'}), 400
     data = request.get_json()
     user_id = data['user_id']
     note_id = data['note_id']
@@ -505,9 +509,24 @@ def modify_share():
     permission = data.get('permission')
 
     if action == 'share':
+        # Prevent sharing with same person twice
+        exists = fetch(
+            'SELECT 1 FROM shared_note WHERE fk_user_id=? AND fk_note_id=?',
+            (user_id, note_id),
+            False
+        )
+        if exists:
+            return jsonify({'error': 'This user is already shared with'}), 400
+
+        # Prevents sharing with invalid user
         user = fetch('SELECT user_id FROM user WHERE user_id=?', (user_id,), False)
         if not user:
             return jsonify({'error': 'User not found'}), 404
+        
+        # Prevents sharing with yourself
+        if str(user_id) == str(session.get('userid')):
+            return jsonify({'error': 'You cannot share with yourself'}), 400
+
 
         insert('INSERT INTO shared_note (fk_user_id, fk_note_id, permission) VALUES (?, ?, ?)',
                (user_id, note_id, permission))

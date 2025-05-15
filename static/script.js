@@ -150,11 +150,11 @@ document.addEventListener('click', (e) => {
         const userIdInput = container.querySelector('.new-user-id');
         const permissionSelect = container.querySelector('.new-user-permission');
 
-        const userId = userIdInput.value.trim();
+        const userId = container.querySelector('.new-user-selected-id').value.trim();
         const permission = permissionSelect.value;
 
         if (!userId) {
-            alert("Please enter a user ID.");
+            alert("Please enter a valid user ID.");
             return;
         }
 
@@ -169,12 +169,14 @@ document.addEventListener('input', async (e) => {
     if (e.target.classList.contains('new-user-id')) {
         const input = e.target;
         const query = input.value.trim();
-        const container = input.closest('.add-share-box');
+        const container = input.closest('.input-with-suggestions');
         const suggestionsList = container.querySelector('.suggestions-list');
+        const hiddenInput = container.querySelector('.new-user-selected-id');
 
-        if (query.length < 2) {
+        if (query.length < 1) {
             suggestionsList.innerHTML = '';
             suggestionsList.style.display = 'none';
+            hiddenInput.value = '';
             return;
         }
 
@@ -183,6 +185,12 @@ document.addEventListener('input', async (e) => {
             const suggestions = await res.json();
 
             suggestionsList.innerHTML = '';
+            if (suggestions.length === 0) {
+                suggestionsList.style.display = 'none';
+                hiddenInput.value = '';
+                return;
+            }
+
             suggestions.forEach(user => {
                 const item = document.createElement('div');
                 item.textContent = user.label;
@@ -200,9 +208,12 @@ document.addEventListener('input', async (e) => {
 document.addEventListener('click', (e) => {
     if (e.target.classList.contains('suggestion-item')) {
         const item = e.target;
-        const container = item.closest('.note-box');
+        const container = item.closest('.input-with-suggestions');
         const input = container.querySelector('.new-user-id');
-        input.value = item.dataset.userId;
+        const hiddenInput = container.querySelector('.new-user-selected-id');
+
+        input.value = item.textContent;
+        hiddenInput.value = item.dataset.userId;
 
         container.querySelector('.suggestions-list').innerHTML = '';
         container.querySelector('.suggestions-list').style.display = 'none';

@@ -6,7 +6,11 @@
         {% include 'partials/update/share_list.html' %}
 
         <div class="add-share-box">
-            <input type="text" class="new-user-id" placeholder="Share with...">
+            <div class="input-with-suggestions">
+                <input type="text" class="new-user-id" placeholder="Enter name, email, or ID" autocomplete="off">
+                <div class="suggestions-list"></div>
+            </div>
+
             <select class="new-user-permission">
                 <option value="0">Read</option>
                 <option value="1">Edit</option>

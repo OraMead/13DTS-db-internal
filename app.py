@@ -388,7 +388,7 @@ def edit_note(note_id):
     if request.method == 'POST':
         content = request.form['content']
         filepath = request.form['filepath']
-        with open(filepath, 'w') as file:
+        with open(filepath, 'w', encoding='utf-8') as file:
             file.write(content)
         insert('UPDATE note set updated_at = CURRENT_TIMESTAMP WHERE note_id = ?', (note_id, ))
         return redirect(url_for('dashboard'))
@@ -556,6 +556,33 @@ def process_shared(note_id):
     note_list = {'id': note_id, 'shared': shared_list}
 
     return render_template('/partials/update/share_list.html', note=note_list)
+
+
+@app.route('/search-users')
+def search_users():
+    if not is_logged_in():
+        return jsonify({'error': 'Not logged in'}), 400
+
+    query = request.args.get('q', '').strip()
+
+    if not query:
+        return jsonify([])
+
+    users = fetch(
+        '''SELECT user_id, fname, lname, email FROM user 
+           WHERE user_id LIKE ? OR fname LIKE ? OR lname LIKE ? OR email LIKE ?
+           LIMIT 10''',
+        (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')
+    )
+
+    return jsonify([
+        {
+            'id': user[0],
+            'label': f"{user[1]} {user[2]} ({user[3]})",
+            'email': user[3]
+        }
+        for user in users
+    ])
 
 
 if __name__ == '__main__':

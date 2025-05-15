@@ -164,3 +164,59 @@ document.addEventListener('click', (e) => {
             });
     }
 });
+
+document.addEventListener('input', async (e) => {
+    if (e.target.classList.contains('new-user-id')) {
+        const input = e.target;
+        const query = input.value.trim();
+        const container = input.closest('.add-share-box');
+        const suggestionsList = container.querySelector('.suggestions-list');
+
+        if (query.length < 2) {
+            suggestionsList.innerHTML = '';
+            suggestionsList.style.display = 'none';
+            return;
+        }
+
+        try {
+            const res = await fetch(`/search-users?q=${encodeURIComponent(query)}`);
+            const suggestions = await res.json();
+
+            suggestionsList.innerHTML = '';
+            suggestions.forEach(user => {
+                const item = document.createElement('div');
+                item.textContent = user.label;
+                item.classList.add('suggestion-item');
+                item.dataset.userId = user.id;
+                suggestionsList.appendChild(item);
+            });
+            suggestionsList.style.display = 'block';
+        } catch (err) {
+            console.error('Failed to fetch user suggestions:', err);
+        }
+    }
+});
+
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('suggestion-item')) {
+        const item = e.target;
+        const container = item.closest('.note-box');
+        const input = container.querySelector('.new-user-id');
+        input.value = item.dataset.userId;
+
+        container.querySelector('.suggestions-list').innerHTML = '';
+        container.querySelector('.suggestions-list').style.display = 'none';
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.new-user-id').forEach(input => {
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                const container = input.closest('.add-share-box');
+                const suggestionsList = container.querySelector('.suggestions-list');
+                suggestionsList.style.display = 'none';
+            }, 200);
+        });
+    });
+});

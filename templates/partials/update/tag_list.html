@@ -1,0 +1,9 @@
+<ul class="tag-list">
+    <li class="tag-subject"><strong>{{ note.subject }}</strong></li>
+    {% for tag in note.tags %}
+    <li class="tag-item">
+        <span>{{ tag.name }}</span>
+        <button class="remove-tag-btn" data-note-id="{{ note.id }}" data-tag-id="{{ tag.id }}">&times;</button>
+    </li>
+    {% endfor %}
+</ul>

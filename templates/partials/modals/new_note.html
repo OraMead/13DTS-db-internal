@@ -13,7 +13,7 @@
                     <select name="subject" id="subject-select" required>
                         <option disabled selected value> -- select an option -- </option>
                         {% for subject in subjects %}
-                        <option value="{{ subject[0] }}">{{ subject[1] }}</option>
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
                         {% endfor %}
                         <option value="add-new">Other</option>
                     </select>

@@ -1,6 +1,23 @@
-<div id="share-note-modal-{{ note[0] }}" class="modal">
+<div id="share-note-modal-{{ note.id }}" class="modal">
     <div class="modal-content">
         <span class="close-btn">&times;</span>
-        <p>Cannot share notes at this time</p>
+        <h3>Manage Sharing</h3>
+
+        {% include 'partials/update/share_list.html' %}
+
+        <div class="add-share-box">
+            <div class="input-with-suggestions">
+                <input type="text" class="new-user-id" placeholder="Enter name, email, or ID" autocomplete="off">
+                <input type="hidden" class="new-user-selected-id" name="user_id">
+                <div class="suggestions-list"></div>
+            </div>
+
+            <select class="new-user-permission">
+                <option value="0">Read</option>
+                <option value="1">Edit</option>
+                <option value="2">Manage</option>
+            </select>
+            <button class="add-share-btn">Share</button>
+        </div>
     </div>
 </div>

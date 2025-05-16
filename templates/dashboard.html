@@ -14,30 +14,34 @@
 <div class="note-group">
     <h3>Recent notes</h3>
     <div class="notes">
-    {% for note in notes %}
-        {% include 'partials/note_box.html' %}
-    {% endfor %}
+    {% if notes|length != 0 %}
+        {% for note in notes[:5] %}
+            {% include 'partials/note_box.html' %}
+        {% endfor %}
+        {% if notes|length > 5 %}
+            {% include 'partials/more_notes.html' %}
+        {% endif %}
+    {% else %}
+    <p>No notes to view. Create a note to start editing</p>
+    {% endif %}
     </div>
 </div>
 
-<!-- <div class="note-group">
+<div class="note-group">
     <h3>Shared with me</h3>
     <div class="notes">
-    {% for note in shared %}
-        <div class="note-box">
-            <h3 class="note-box-title">{{ note[1] }}</h3>
-            <p>{{ note[2] }}</p>
-            <ul class="tag-list">
-                <li><strong>{{ note[3] }}</strong></li>
-                {% for tag in note[4] %}
-                <li>{{ tag }}</li>
-                {% endfor %}
-            </ul>
-            <p><strong>Shared by:</strong> {{ note[5] }}</p>
-        </div>
-    {% endfor %}
+    {% if shared|length != 0 %}
+        {% for note in shared[:5] %}
+            {% include 'partials/note_box.html' %}
+        {% endfor %}
+        {% if shared|length > 5 %}
+            {% include 'partials/more_notes.html' %}
+        {% endif %}
+    {% else %}
+    <p>No shared notes to view. Create a note to start editing</p>
+    {% endif %}
     </div>
-</div> -->
+</div>
 
 <script src="/static/script.js"></script>
 {% endblock %}

@@ -1,7 +1,7 @@
-<div id="delete-note-modal-{{ note.id }}" class="modal">
+<div id="note-options-modal-{{ note.id }}" class="modal">
     <div class="modal-content">
         <span class="close-btn">&times;</span>
-        <h3>Delete {{ note.title }}?</h3>
+        <h3>Note Options</h3>
 
         <form method="POST" action="{{ url_for('delete', note_id=note.id) }}">
             <div class="button-group">
@@ -11,3 +11,5 @@
         </form>
     </div>
 </div>
+
+<!-- Change name and edit subject -->

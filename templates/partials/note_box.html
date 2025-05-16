@@ -10,11 +10,13 @@
     {% include 'partials/update/tag_list.html' %}
 
     <div class="note-actions">
+        <button class="open-modal-btn" data-modal="copy-note-modal-{{ note.id }}" title="Copy"><i class="fas fa-copy"></i></button>
+        {% if note.permission == 2 %}
         <button class="open-modal-btn" data-modal="change-tags-modal-{{ note.id }}" title="Change Tags"><i class="fas fa-tag"></i></button>
         <button class="open-modal-btn" data-modal="share-note-modal-{{ note.id }}" title="Share"><i class="fas fa-share-alt"></i></button>
-        <button class="open-modal-btn" data-modal="copy-note-modal-{{ note.id }}" title="Copy"><i class="fas fa-copy"></i></button>
         <button class="open-modal-btn" data-modal="delete-note-modal-{{ note.id }}" title="Delete"><i class="fas fa-trash-alt"></i></button>
         <button class="open-modal-btn" data-modal="note-options-modal-{{ note.id }}" title="More"><i class="fas fa-ellipsis-v"></i></button>
+        {% endif %}
     </div>
 
     {% include 'partials/modals/change_tags.html' %}

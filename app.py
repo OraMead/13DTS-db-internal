@@ -501,6 +501,22 @@ def process_tags(note_id):
     return render_template('/partials/update/tag_list.html', tags=tag_list, note=note_list)
 
 
+@app.route('/add-tag', methods=['POST'])
+def add_tag():
+    data = request.get_json()
+    tag_name = data.get('tag_name', '').strip()
+
+    if not tag_name:
+        return jsonify({'success': False, 'error': 'Invalid input'})
+
+    tag = fetch('SELECT * FROM tag WHERE name=? AND fk_user_id=?', (tag_name, session.get('userid')), False)
+    if not tag:
+        insert('INSERT INTO tag (name, fk_user_id) VALUES (?, ?)', (tag_name, session.get('userid')))
+        tag = fetch('SELECT * FROM tag WHERE name=? AND fk_user_id=?', (tag_name, session.get('userid')), False)
+
+    return jsonify({'success': True, 'tag_id': tag[0], 'tag_name': tag[2]})
+
+
 @app.route('/delete/<int:note_id>', methods=['POST'])
 def delete(note_id):
     if not is_logged_in():

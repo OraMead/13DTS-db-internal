@@ -23,13 +23,13 @@ document.getElementById('subject-select').addEventListener('change', function ()
 });
 
 // Toggle tags
-document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
-    checkbox.addEventListener('change', () => {
+document.addEventListener('change', function (e) {
+    if (e.target.classList.contains('tag-checkbox')) {
+        const checkbox = e.target;
         const noteId = checkbox.dataset.noteId;
         const tagId = checkbox.dataset.tagId;
-        const checked = checkbox.checked;
-        toggleTag(noteId, tagId, checked)
-    });
+        toggleTag(noteId, tagId, checkbox.checked);
+    }
 });
 
 document.addEventListener('click', function (e) {
@@ -38,6 +38,48 @@ document.addEventListener('click', function (e) {
         const tagId = e.target.dataset.tagId;
         toggleTag(noteId, tagId, false);
     }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.add-tag-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const noteId = this.dataset.noteId;
+            const input = document.getElementById(`new-tag-input-${noteId}`);
+            const tagName = input.value.trim();
+            if (!tagName) return;
+
+            fetch('/add-tag', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tag_name: tagName, note_id: noteId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const { tag_id, tag_name } = data;
+
+                    document.querySelectorAll(`.modal`).forEach(modal => {
+                        const tagContainer = modal.querySelector('[data-tag-container]');
+                        if (!tagContainer) return;
+
+                        if (modal.querySelector(`.tag-checkbox[data-tag-id="${tag_id}"]`)) return;
+
+                        const label = document.createElement('label');
+                        label.innerHTML = `
+                            <input type="checkbox" class="tag-checkbox" data-tag-id="${tag_id}" data-note-id="${noteId}">
+                            ${tag_name}
+                        `;
+                        tagContainer.appendChild(label);
+                        tagContainer.appendChild(document.createElement('br'));
+                    });
+
+                    input.value = '';
+                } else {
+                    alert(data.error || 'Failed to add tag.');
+                }
+            });
+        });
+    });
 });
 
 function toggleTag(noteId, tagId, checked) {

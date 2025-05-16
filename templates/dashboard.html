@@ -19,7 +19,9 @@
             {% include 'partials/note_box.html' %}
         {% endfor %}
         {% if notes|length > 5 %}
-            {% include 'partials/more_notes.html' %}
+            {% with shared_link=0 %}
+                {% include 'partials/more_notes.html' %}
+            {% endwith %}
         {% endif %}
     {% else %}
     <p>No notes to view. Create a note to start editing</p>
@@ -35,7 +37,9 @@
             {% include 'partials/note_box.html' %}
         {% endfor %}
         {% if shared|length > 5 %}
-            {% include 'partials/more_notes.html' %}
+            {% with shared_link=1 %}
+                {% include 'partials/more_notes.html' %}
+            {% endwith %}
         {% endif %}
     {% else %}
     <p>No shared notes to view. Create a note to start editing</p>

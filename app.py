@@ -471,16 +471,18 @@ def copy(note_id):
     cur.execute('SELECT * FROM note WHERE note_id=?', (note_id, ))
     note = cur.fetchone()
 
+    cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (session.get('userid'), note[2], title or f'Copy of {note[3]}'))
+    note_id = cur.lastrowid
+
     if copy_tags:
-        cur.execute('SELECT * FROM note_tag WHERE fk_note_id=?', (note_id, ))
+        cur.execute('SELECT * FROM note_tag WHERE fk_note_id=?', (note[0], ))
         tags = cur.fetchall()
 
     if copy_shared:
-        cur.execute('SELECT * FROM shared_note WHERE fk_note_id=?', (note_id, ))
+        cur.execute('SELECT * FROM shared_note WHERE fk_note_id=? AND fk_user_id!=?', (note[0], session.get('userid')))
         shared = cur.fetchall()
-
-    cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (note[1], note[2], title or f'Copy of {note[3]}'))
-    note_id = cur.lastrowid
+        if note[1] != session.get('userid'):
+            shared.append((note[0], note[1], 2))
 
     destination = os.path.join(app.config['UPLOAD_FOLDER'], f'file_{note_id}.txt')
     shutil.copyfile(source, destination)

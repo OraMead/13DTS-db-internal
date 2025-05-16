@@ -11,7 +11,7 @@
 
     <div class="note-actions">
         <button class="open-modal-btn" data-modal="copy-note-modal-{{ note.id }}" title="Copy"><i class="fas fa-copy"></i></button>
-        {% if note.permission == 2 %}
+        {% if note.permission == 2 or note.permission is not defined %}
         <button class="open-modal-btn" data-modal="change-tags-modal-{{ note.id }}" title="Change Tags"><i class="fas fa-tag"></i></button>
         <button class="open-modal-btn" data-modal="share-note-modal-{{ note.id }}" title="Share"><i class="fas fa-share-alt"></i></button>
         <button class="open-modal-btn" data-modal="delete-note-modal-{{ note.id }}" title="Delete"><i class="fas fa-trash-alt"></i></button>

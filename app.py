@@ -12,6 +12,7 @@ app.secret_key = 'aiurghrbuinwtugabdbwtr'
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'txt'}
+ADMIN_PASSWORD = 'ADMINPASSWORD'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -96,7 +97,7 @@ def create_connection(db_file: str) -> sqlite3.Connection|None:
         return None
 
 
-def insert(query: str, data: tuple, redirect_loc: str = None) -> None:
+def insert(query: str, data: tuple) -> None:
     """
     Inserts a query into the database
     :param query: Query to insert
@@ -105,15 +106,11 @@ def insert(query: str, data: tuple, redirect_loc: str = None) -> None:
     :return: Redirect if location given and error encountered
     """
     con = create_connection(DB_PATH)
-    cur = con.cursor()
     try:
-        cur.execute(query, data)
-        con.commit()
-    except sqlite3.IntegrityError:
-        print('DB insert error')
-        return redirect(redirect_loc) if redirect else None
-    con.close()
-    return None
+        with con:
+            con.execute(query, data)
+    finally:
+        con.close()
 
 
 def fetch(query: str, arguments: tuple = (), fetch_all: bool = True) -> list:
@@ -221,7 +218,7 @@ def dashboard():
     :return: Rendered dashboard page
     """
     if not is_logged_in():
-        return redirect('/')
+        return redirect(url_for('index'))
     
     note_list = fetch(NOTE_LIST_QUERY, (session['userid'], ))
 
@@ -281,11 +278,16 @@ def login():
     :return: Rendered login page or redirect to index page
     """
     if is_logged_in():
-        return redirect('/')
+        return redirect(url_for('index'))
+    
+    error = None
+    form_data = {'email': ''}
 
     if request.method == 'POST':
         email = request.form.get('email').strip().lower()
         password = request.form.get('password')
+
+        form_data.update({'email': email})
 
         user_data = fetch('SELECT user_id, fname, lname, password, role FROM user WHERE email = ?', (email,))
 
@@ -296,19 +298,21 @@ def login():
             db_password = user_data[0][3]
             role = user_data[0][4]
         except IndexError:
-            return redirect('/login?error=email+or+password+invalid')
+            error = 'Email or password is invalid.'
+            return render_template('login.html', title='login', logged_in=is_logged_in(), error=error, form_data=form_data)
         
         if not bcrypt.check_password_hash(db_password, password):
-            return redirect('/login?error=email+or+password+invalid')
+            error = 'Email or password is invalid.'
+            return render_template('login.html', title='login', logged_in=is_logged_in(), error=error, form_data=form_data)
         
         session['email'] = email
         session['userid'] = userid
         session['firstname'] = firstname
         session['lastname'] = lastname
         session['role'] = role
-        return redirect('/')
+        return redirect(url_for('index'))
 
-    return render_template('login.html', title='login', logged_in=is_logged_in())
+    return render_template('login.html', title='login', logged_in=is_logged_in(), error=error, form_data=form_data)
 
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -318,7 +322,15 @@ def signup():
     :return: Rendered signup page or redirect to login page
     """
     if is_logged_in():
-        return redirect('/')
+        return redirect(url_for('index'))
+    
+    error = None
+    form_data = {
+        'fname': '',
+        'lname': '',
+        'email': '',
+        'role': ''
+    }
 
     if request.method == 'POST':
         fname = request.form.get('fname').strip().title()
@@ -328,18 +340,33 @@ def signup():
         password2 = request.form.get('password2')
         role = request.form.get('role')
 
+        form_data.update({'fname': fname, 'lname': lname, 'email': email, 'role': role})
+
         if password != password2:
-            return redirect('/signup?error=passwords+dont+match')
+            error = "Passwords don't match."
+            return render_template('signup.html', title='signup', logged_in=is_logged_in(),
+                                   error=error, form_data=form_data)
+        
+        if role == '2':
+            admin_password = request.form.get('admin-password', '')
+            if admin_password != ADMIN_PASSWORD:
+                error = "Invalid admin password."
+                return render_template('signup.html', title='signup', logged_in=is_logged_in(),
+                                       error=error, form_data=form_data)
 
         hashed_password = bcrypt.generate_password_hash(password)
 
-        insert('INSERT INTO user(user_id, fname, lname, email, password, role) VALUES(NULL,?,?,?,?,?)',
-                (fname, lname, email, hashed_password, role),
-                '/signup?error=invalid+email')
+        try:
+            insert('INSERT INTO user(user_id, fname, lname, email, password, role) VALUES(NULL,?,?,?,?,?)',
+                (fname, lname, email, hashed_password, role))
+        except sqlite3.IntegrityError as e:
+            error = "Email already exists or invalid data."
+            return render_template('signup.html', title='signup', logged_in=is_logged_in(), error=error, form_data=form_data)
 
-        return redirect('/login')
 
-    return render_template('signup.html', title='signup', logged_in=is_logged_in())
+        return redirect(url_for('login'))
+
+    return render_template('signup.html', title='signup', logged_in=is_logged_in(), error=error, form_data=form_data)
 
 
 @app.route('/logout')
@@ -349,7 +376,7 @@ def logout():
     :return: Redirect to the login page
     """
     [session.pop(key) for key in list(session.keys())]
-    return redirect('/login')
+    return redirect(url_for('login'))
 
 
 @app.route('/account')
@@ -359,7 +386,7 @@ def account():
     :return: Rendered account page
     """
     if not is_logged_in():
-        return redirect('/')
+        return redirect(url_for('index'))
 
     return render_template('account.html', title='account', logged_in=is_logged_in())
 
@@ -401,7 +428,7 @@ def upload():
     con.commit()
     con.close()
     
-    return redirect('/dashboard')
+    return redirect(url_for('dashboard'))
 
 
 @app.route('/edit/<int:note_id>', methods=['GET', 'POST'])
@@ -412,7 +439,7 @@ def edit_note(note_id):
     :return: Render of editor page
     """
     if not is_logged_in():
-        return redirect('/dashboard')
+        return redirect(url_for('dashboard'))
     if request.method == 'POST':
         content = request.form['content']
         filepath = request.form['filepath']
@@ -479,7 +506,7 @@ def add_tag():
 @app.route('/delete/<int:note_id>', methods=['POST'])
 def delete(note_id):
     if not is_logged_in():
-        return redirect('/login')
+        return redirect(url_for('login'))
     
     owner = fetch("SELECT fk_user_id FROM note WHERE note_id = ?", (note_id,), False)
     if not owner or owner[0] != session['userid']:
@@ -494,13 +521,13 @@ def delete(note_id):
         os.remove(file_path)
         
 
-    return redirect('/dashboard')
+    return redirect(url_for('dashboard'))
 
 
 @app.route('/copy/<int:note_id>', methods=['POST'])
 def copy(note_id):
     if not is_logged_in():
-        return redirect('/login')
+        return redirect(url_for('login'))
     
     title = request.form.get('title')
     copy_tags = request.form.get('tags')
@@ -540,7 +567,7 @@ def copy(note_id):
     con.commit()
     con.close()
 
-    return redirect('/dashboard')
+    return redirect(url_for('dashboard'))
 
 
 # Sharing
@@ -659,7 +686,7 @@ def note_options(note_id):
     con.commit()
     con.close()
     
-    return redirect('/dashboard')
+    return redirect(url_for('dashboard'))
 
 
 if __name__ == '__main__':

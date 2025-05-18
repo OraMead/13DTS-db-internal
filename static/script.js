@@ -15,8 +15,9 @@ document.querySelectorAll('.modal').forEach(modal => {
     });
 });
 
-// Add new subject modal
+// Modal text inputs
 document.addEventListener('DOMContentLoaded', function () {
+    // Add subject box
     document.querySelectorAll('select[id^="subject-select-"]').forEach(select => {
         select.addEventListener('change', function () {
             const suffix = this.id.replace('subject-select-', '');
@@ -30,6 +31,20 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // Admin password box
+    const roleSelect = document.getElementById('role');
+    const adminPasswordGroup = document.getElementById('admin-password-group');
+
+    if (roleSelect && adminPasswordGroup) {
+        roleSelect.addEventListener('change', function () {
+            const isAdmin = this.value === '2';
+            adminPasswordGroup.style.display = isAdmin ? 'block' : 'none';
+            const input = adminPasswordGroup.querySelector('input');
+            input.required = isAdmin;
+            if (!isAdmin) input.value = '';
+        });
+    }
 });
 
 

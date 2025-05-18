@@ -5,20 +5,24 @@
 {% endblock %}
 
 {% block main %}
+    {% if error %}
+    <div class="error-message">{{ error }}</div>
+    {% endif %}
+
     <form method="post">
         <div class="form-group">
             <div class="form-label">First Name</div>
-            <div class="form-element"><input id="fname" name="fname" type="text" required></div>
+            <div class="form-element"><input id="fname" name="fname" type="text" required value="{{ form_data.fname }}"></div>
         </div>
 
         <div class="form-group">
             <div class="form-label">Last Name</div>
-            <div class="form-element"><input id="lname" name="lname" type="text" required></div>
+            <div class="form-element"><input id="lname" name="lname" type="text" required value="{{ form_data.lname }}"></div>
         </div>
 
         <div class="form-group">
             <div class="form-label">Email</div>
-            <div class="form-element"><input id="email" name="email" type="email" required></div>
+            <div class="form-element"><input id="email" name="email" type="email" required value="{{ form_data.email }}"></div>
         </div>
 
         <div class="form-group">
@@ -42,10 +46,17 @@
                 </select>
             </div>
         </div>
+
+        <div class="form-group" id="admin-password-group" style="display: none;">
+            <div class="form-label">Admin Password</div>
+            <div class="form-element"><input id="admin-password" name="admin-password" type="password"></div>
+        </div>
             
         <div class="button-group">
             <input type="submit" value="Submit">
             <input type="reset" value="Reset">
         </div>
     </form>
+
+    <script src="/static/script.js"></script>
 {% endblock %}

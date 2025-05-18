@@ -125,40 +125,60 @@ nav a:hover {
 }
 
 /* Form Styling */
-/* form {
-    width: 80%;
-    margin: auto;
-    padding-top: 3rem;
+form {
+    width: 100%;
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .form-group {
-    padding-top: 3rem;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5rem;
 }
 
 .form-label {
-    width: 30%;
-    float: left;
-    padding: 0.3rem;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: #333;
 }
 
 .form-element {
-    width: 70%;
-    float: left;
+    padding: 0.7rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 0.4rem;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-element:focus {
+    border-color: #4CAF50;
+    outline: none;
 }
 
 .button-group {
-    margin-top: 3rem;
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
 }
 
-.button-group input {
-    padding: 0.3rem;
-}
-
-.form-group input {
-    padding: 0.3rem;
+.form-element input[type="text"],
+.form-element input[type="email"],
+.form-element input[type="password"] {
     width: 100%;
-} */
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 0.4rem;
+    box-sizing: border-box;
+}
 
 /* Tag List */
 .tag-list {
@@ -386,4 +406,16 @@ button:hover {
 
 .suggestion-item:hover {
     background-color: #f0f0f0;
+}
+
+.error-message {
+  background-color: #ffe6e6;
+  color: #cc0000;
+  border: 1px solid #cc0000;
+  padding: 10px 15px;
+  margin: 10px 0;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 1px 3px rgba(204, 0, 0, 0.3);
 }

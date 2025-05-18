@@ -102,7 +102,6 @@ def insert(query: str, data: tuple) -> None:
     Inserts a query into the database
     :param query: Query to insert
     :param data: Data to insert
-    :param redirect_loc: Location to redirect to if error
     :return: Redirect if location given and error encountered
     """
     con = create_connection(DB_PATH)
@@ -359,7 +358,7 @@ def signup():
         try:
             insert('INSERT INTO user(user_id, fname, lname, email, password, role) VALUES(NULL,?,?,?,?,?)',
                 (fname, lname, email, hashed_password, role))
-        except sqlite3.IntegrityError as e:
+        except sqlite3.IntegrityError:
             error = "Email already exists or invalid data."
             return render_template('signup.html', title='signup', logged_in=is_logged_in(), error=error, form_data=form_data)
 

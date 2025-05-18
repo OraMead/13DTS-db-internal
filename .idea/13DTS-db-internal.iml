@@ -9,6 +9,9 @@
     <option name="TEMPLATE_FOLDERS">
       <list>
         <option value="$MODULE_DIR$/templates" />
+        <option value="$MODULE_DIR$/templates/partials" />
+        <option value="$MODULE_DIR$/templates/partials/modals" />
+        <option value="$MODULE_DIR$/templates/partials/update" />
       </list>
     </option>
   </component>

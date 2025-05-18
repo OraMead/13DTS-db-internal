@@ -10,15 +10,15 @@
             <div class="form-group">
                 <div class="form-label">Subject</div>
                 <div class="form-element">
-                    <select name="subject" id="subject-select" required>
+                    <select name="subject" id="subject-select-new-note" required>
                         <option disabled selected value> -- select an option -- </option>
                         {% for subject in subjects %}
                         <option value="{{ subject.id }}">{{ subject.name }}</option>
                         {% endfor %}
                         <option value="add-new">Other</option>
                     </select>
-                    <div id="new-subject-container" style="display: none;">
-                        <input type="text" id="new-subject" name="new-subject" placeholder="Enter new subject">
+                    <div id="new-subject-container-new-note" style="display: none;">
+                        <input type="text" id="new-subject-new-note" name="new-subject" placeholder="Enter new subject">
                     </div>
                 </div>
             </div>

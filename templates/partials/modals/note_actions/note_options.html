@@ -1,0 +1,35 @@
+<div id="note-options-modal-{{ note.id }}" class="modal">
+    <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h3>Note Options</h3>
+
+        <form method="POST" action="{{ url_for('note_options', note_id=note.id) }}">
+            <div class="form-group">
+                <div class="form-label">Change Name</div>
+                <div class="form-element">
+                    <input type="text" id="change-name-{{ note.id }}" name="change-name" placeholder="{{ note.title }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="form-label">Change Subject</div>
+                <div class="form-element">
+                    <select name="subject" id="subject-select-{{ note.id }}">
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}" {% if subject.id == note.subject_id %}selected{% endif %}>{{ subject.name }}</option>
+                        {% endfor %}
+                        <option value="add-new">Other</option>
+                    </select>
+                    <div id="new-subject-container-{{ note.id }}" style="display: none;">
+                        <input type="text" id="new-subject-{{ note.id }}" name="new-subject" placeholder="Enter new subject">
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="close-btn">Cancel</button>
+                <button type="submit" class="apply-btn">Apply Changes</button>
+            </div>
+        </form>
+    </div>
+</div>

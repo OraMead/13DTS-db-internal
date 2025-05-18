@@ -16,11 +16,22 @@ document.querySelectorAll('.modal').forEach(modal => {
 });
 
 // Add new subject modal
-document.getElementById('subject-select').addEventListener('change', function () {
-    const showInput = this.value === 'add-new';
-    document.getElementById('new-subject-container').style.display = showInput ? 'block' : 'none';
-    document.getElementById('new-subject').required = showInput;
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('select[id^="subject-select-"]').forEach(select => {
+        select.addEventListener('change', function () {
+            const suffix = this.id.replace('subject-select-', '');
+            const container = document.getElementById('new-subject-container-' + suffix);
+            const input = document.getElementById('new-subject-' + suffix);
+
+            if (container && input) {
+                const showInput = this.value === 'add-new';
+                container.style.display = showInput ? 'block' : 'none';
+                input.required = showInput;
+            }
+        });
+    });
 });
+
 
 // Toggle tags
 document.addEventListener('change', function (e) {
@@ -113,7 +124,6 @@ function toggleTag(noteId, tagId, checked) {
     });
 }
 
-
 function refreshTagList(noteId) {
     fetch(`/process-tags/${noteId}`)
         .then(response => response.text())
@@ -204,6 +214,17 @@ document.addEventListener('click', (e) => {
             .then(() => {
                 userIdInput.value = '';
             });
+    } else if (e.target.classList.contains('suggestion-item')) {
+        const item = e.target;
+        const container = item.closest('.input-with-suggestions');
+        const input = container.querySelector('.new-user-id');
+        const hiddenInput = container.querySelector('.new-user-selected-id');
+
+        input.value = item.textContent;
+        hiddenInput.value = item.dataset.userId;
+
+        container.querySelector('.suggestions-list').innerHTML = '';
+        container.querySelector('.suggestions-list').style.display = 'none';
     }
 });
 
@@ -244,21 +265,6 @@ document.addEventListener('input', async (e) => {
         } catch (err) {
             console.error('Failed to fetch user suggestions:', err);
         }
-    }
-});
-
-document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('suggestion-item')) {
-        const item = e.target;
-        const container = item.closest('.input-with-suggestions');
-        const input = container.querySelector('.new-user-id');
-        const hiddenInput = container.querySelector('.new-user-selected-id');
-
-        input.value = item.textContent;
-        hiddenInput.value = item.dataset.userId;
-
-        container.querySelector('.suggestions-list').innerHTML = '';
-        container.querySelector('.suggestions-list').style.display = 'none';
     }
 });
 

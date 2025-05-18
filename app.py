@@ -15,6 +15,52 @@ ALLOWED_EXTENSIONS = {'txt'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+NOTE_LIST_QUERY = '''SELECT 
+                        n.note_id,
+                        n.title,
+                        s.name,
+                        n.fk_subject_id,
+                        (
+                            SELECT GROUP_CONCAT(t.tag_id || ':' || t.name, '|')
+                            FROM note_tag nt
+                            JOIN tag t ON nt.fk_tag_id = t.tag_id
+                            WHERE nt.fk_note_id = n.note_id
+                        ) AS tags,
+                        (
+                            SELECT GROUP_CONCAT(u.user_id || ':' || u.fname || ' ' || u.lname || ':' || sn.permission, '|')
+                            FROM shared_note sn
+                            JOIN user u ON sn.fk_user_id = u.user_id
+                            WHERE sn.fk_note_id = n.note_id
+                        ) AS shared
+                    FROM note n
+                    JOIN subject s ON n.fk_subject_id = s.subject_id
+                    WHERE n.fk_user_id = ?
+                    ORDER BY n.updated_at DESC;'''
+SHARED_LIST_QUERY = '''SELECT 
+                            n.note_id,
+                            n.title,
+                            s.name,
+                            n.fk_subject_id,
+                            (
+                                SELECT GROUP_CONCAT(t.tag_id || ':' || t.name, '|')
+                                FROM note_tag nt
+                                JOIN tag t ON nt.fk_tag_id = t.tag_id
+                                WHERE nt.fk_note_id = n.note_id
+                            ) AS tags,
+                            (
+                                SELECT GROUP_CONCAT(u.user_id || ':' || u.fname || ' ' || u.lname || ':' || sn2.permission, '|')
+                                FROM shared_note sn2
+                                JOIN user u ON sn2.fk_user_id = u.user_id
+                                WHERE sn2.fk_note_id = n.note_id
+                            ) AS shared,
+                            u.fname || ' ' || u.lname AS owner,
+                            sn.permission
+                        FROM note n
+                        JOIN subject s ON n.fk_subject_id = s.subject_id
+                        JOIN user u ON n.fk_user_id = u.user_id
+                        JOIN shared_note sn ON n.note_id = sn.fk_note_id
+                        WHERE sn.fk_user_id = ?
+                        ORDER BY n.updated_at DESC;'''
 
 # Temp function for editor
 def get_note_content(note_id):
@@ -121,14 +167,14 @@ def process_note(note) -> dict:
     tag_ids = []
     shared = []
 
-    if note[3]:
-        for tag in note[3].split('|'):
+    if note[4]:
+        for tag in note[4].split('|'):
             tag_id, tag_name = tag.split(':')
             tags.append({'id': int(tag_id), 'name': tag_name})
             tag_ids.append(int(tag_id))
 
-    if note[4]:
-        for user in note[4].split('|'):
+    if note[5]:
+        for user in note[5].split('|'):
             user_id, user_name, user_permission = user.split(':')
             shared.append({'id': int(user_id), 'name': user_name, 'permission': int(user_permission)})
 
@@ -136,15 +182,16 @@ def process_note(note) -> dict:
         'id': note[0],
         'title': note[1],
         'subject': note[2],
+        'subject_id': int(note[3]),
         'tags': tags,
         'tag_ids': tag_ids,
         'shared': shared,
         'content': truncated_content
     }
 
-    if len(note) > 5:
-        note_data['owner'] = note[5]
-        note_data['permission'] = note[6]
+    if len(note) > 6:
+        note_data['owner'] = note[6]
+        note_data['permission'] = note[7]
     
     return note_data
 
@@ -176,53 +223,9 @@ def dashboard():
     if not is_logged_in():
         return redirect('/')
     
-    note_list = fetch('''SELECT 
-                            n.note_id,
-                            n.title,
-                            s.name,
-                            (
-                                SELECT GROUP_CONCAT(t.tag_id || ':' || t.name, '|')
-                                FROM note_tag nt
-                                JOIN tag t ON nt.fk_tag_id = t.tag_id
-                                WHERE nt.fk_note_id = n.note_id
-                            ) AS tags,
-                            (
-                                SELECT GROUP_CONCAT(u.user_id || ':' || u.fname || ' ' || u.lname || ':' || sn.permission, '|')
-                                FROM shared_note sn
-                                JOIN user u ON sn.fk_user_id = u.user_id
-                                WHERE sn.fk_note_id = n.note_id
-                            ) AS shared
-                        FROM note n
-                        JOIN subject s ON n.fk_subject_id = s.subject_id
-                        WHERE n.fk_user_id = ?
-                        ORDER BY n.updated_at DESC;''',
-                      (session['userid'], ))
+    note_list = fetch(NOTE_LIST_QUERY, (session['userid'], ))
 
-    shared_list = fetch('''SELECT 
-                                n.note_id,
-                                n.title,
-                                s.name,
-                                (
-                                    SELECT GROUP_CONCAT(t.tag_id || ':' || t.name, '|')
-                                    FROM note_tag nt
-                                    JOIN tag t ON nt.fk_tag_id = t.tag_id
-                                    WHERE nt.fk_note_id = n.note_id
-                                ) AS tags,
-                                (
-                                    SELECT GROUP_CONCAT(u.user_id || ':' || u.fname || ' ' || u.lname || ':' || sn2.permission, '|')
-                                    FROM shared_note sn2
-                                    JOIN user u ON sn2.fk_user_id = u.user_id
-                                    WHERE sn2.fk_note_id = n.note_id
-                                ) AS shared,
-                                u.fname || ' ' || u.lname AS owner,
-                                sn.permission
-                            FROM note n
-                            JOIN subject s ON n.fk_subject_id = s.subject_id
-                            JOIN user u ON n.fk_user_id = u.user_id
-                            JOIN shared_note sn ON n.note_id = sn.fk_note_id
-                            WHERE sn.fk_user_id = ?
-                            ORDER BY n.updated_at DESC;''',
-                        (session['userid'], ))
+    shared_list = fetch(SHARED_LIST_QUERY, (session['userid'], ))
     
     for i, note in enumerate(note_list):
         note_list[i] = process_note(note)
@@ -248,53 +251,9 @@ def dashboard():
 @app.route('/more/<int:shared>')
 def more(shared):
     if shared:
-        note_list = fetch('''SELECT 
-                            n.note_id,
-                            n.title,
-                            s.name,
-                            (
-                                SELECT GROUP_CONCAT(t.tag_id || ':' || t.name, '|')
-                                FROM note_tag nt
-                                JOIN tag t ON nt.fk_tag_id = t.tag_id
-                                WHERE nt.fk_note_id = n.note_id
-                            ) AS tags,
-                            (
-                                SELECT GROUP_CONCAT(u.user_id || ':' || u.fname || ' ' || u.lname || ':' || sn2.permission, '|')
-                                FROM shared_note sn2
-                                JOIN user u ON sn2.fk_user_id = u.user_id
-                                WHERE sn2.fk_note_id = n.note_id
-                            ) AS shared,
-                            u.fname || ' ' || u.lname AS owner,
-                            sn.permission
-                        FROM note n
-                        JOIN subject s ON n.fk_subject_id = s.subject_id
-                        JOIN user u ON n.fk_user_id = u.user_id
-                        JOIN shared_note sn ON n.note_id = sn.fk_note_id
-                        WHERE sn.fk_user_id = ?
-                        ORDER BY n.updated_at DESC;''',
-                    (session['userid'], ))
+        note_list = fetch(SHARED_LIST_QUERY, (session['userid'], ))
     else:
-        note_list = fetch('''SELECT 
-                            n.note_id,
-                            n.title,
-                            s.name,
-                            (
-                                SELECT GROUP_CONCAT(t.tag_id || ':' || t.name, '|')
-                                FROM note_tag nt
-                                JOIN tag t ON nt.fk_tag_id = t.tag_id
-                                WHERE nt.fk_note_id = n.note_id
-                            ) AS tags,
-                            (
-                                SELECT GROUP_CONCAT(u.user_id || ':' || u.fname || ' ' || u.lname || ':' || sn.permission, '|')
-                                FROM shared_note sn
-                                JOIN user u ON sn.fk_user_id = u.user_id
-                                WHERE sn.fk_note_id = n.note_id
-                            ) AS shared
-                        FROM note n
-                        JOIN subject s ON n.fk_subject_id = s.subject_id
-                        WHERE n.fk_user_id = ?
-                        ORDER BY n.updated_at DESC;''',
-                      (session['userid'], ))
+        note_list = fetch(NOTE_LIST_QUERY, (session['userid'], ))
 
     for i, note in enumerate(note_list):
         note_list[i] = process_note(note)
@@ -509,10 +468,10 @@ def add_tag():
     if not tag_name:
         return jsonify({'success': False, 'error': 'Invalid input'})
 
-    tag = fetch('SELECT * FROM tag WHERE name=? AND fk_user_id=?', (tag_name, session.get('userid')), False)
+    tag = fetch('SELECT * FROM tag WHERE name=? AND fk_user_id=?', (tag_name, session['userid']), False)
     if not tag:
-        insert('INSERT INTO tag (name, fk_user_id) VALUES (?, ?)', (tag_name, session.get('userid')))
-        tag = fetch('SELECT * FROM tag WHERE name=? AND fk_user_id=?', (tag_name, session.get('userid')), False)
+        insert('INSERT INTO tag (name, fk_user_id) VALUES (?, ?)', (tag_name, session['userid']))
+        tag = fetch('SELECT * FROM tag WHERE name=? AND fk_user_id=?', (tag_name, session['userid']), False)
 
     return jsonify({'success': True, 'tag_id': tag[0], 'tag_name': tag[2]})
 
@@ -556,7 +515,7 @@ def copy(note_id):
     cur.execute('SELECT * FROM note WHERE note_id=?', (note_id, ))
     note = cur.fetchone()
 
-    cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (session.get('userid'), note[2], title or f'Copy of {note[3]}'))
+    cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (session['userid'], note[2], title or f'Copy of {note[3]}'))
     note_id = cur.lastrowid
 
     if copy_tags:
@@ -564,9 +523,9 @@ def copy(note_id):
         tags = cur.fetchall()
 
     if copy_shared:
-        cur.execute('SELECT * FROM shared_note WHERE fk_note_id=? AND fk_user_id!=?', (note[0], session.get('userid')))
+        cur.execute('SELECT * FROM shared_note WHERE fk_note_id=? AND fk_user_id!=?', (note[0], session['userid']))
         shared = cur.fetchall()
-        if note[1] != session.get('userid'):
+        if note[1] != session['userid']:
             shared.append((note[0], note[1], 2))
 
     destination = os.path.join(app.config['UPLOAD_FOLDER'], f'file_{note_id}.txt')
@@ -611,7 +570,7 @@ def modify_share():
             return jsonify({'error': 'User not found'}), 404
         
         # Prevents sharing with yourself
-        if str(user_id) == str(session.get('userid')):
+        if str(user_id) == str(session['userid']):
             return jsonify({'error': 'You cannot share with yourself'}), 400
 
 
@@ -670,6 +629,37 @@ def search_users():
         }
         for user in users
     ])
+
+@app.route('/note_options/<int:note_id>', methods=['POST'])
+def note_options(note_id):
+    title = request.form.get('change-name', '').strip()
+    subject = request.form.get('subject')
+    new_subject = request.form.get('new-subject').strip()
+
+    con = create_connection(DB_PATH)
+    cur = con.cursor()
+
+    cur.execute('SELECT title FROM note WHERE note_id=?', (note_id, ))
+    note_data = cur.fetchone()
+    print(note_data)
+
+    print(title)
+
+    if not title:
+        title = note_data[0]
+    
+    print(title)
+
+    if subject == 'add-new' and new_subject:
+        cur.execute('INSERT INTO subject (fk_user_id, name) VALUES (?, ?)', (session['userid'], new_subject))
+        subject = cur.lastrowid
+
+    cur.execute('UPDATE note SET fk_subject_id=?, title=? WHERE note_id=?', (subject, title, note_id))
+
+    con.commit()
+    con.close()
+    
+    return redirect('/dashboard')
 
 
 if __name__ == '__main__':

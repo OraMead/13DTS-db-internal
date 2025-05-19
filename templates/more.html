@@ -10,6 +10,8 @@
 
 {% block main %}
 
+<a href="{{ url_for('dashboard') }}">Back</a>
+
 {% if not shared %}
     <div class="button-group">
         <button class="open-modal-btn" data-modal="new-note-modal">New Note or upload file</button>

@@ -1,11 +1,9 @@
-<div class="note-box" data-note-id="{{ note.id }}">
-    <a href="{{ url_for('edit_note', note_id=note.id) }}">
-        <h3 class="note-box-title">{{ note.title }}</h3>
-        {% if note.owner %}
-        <h5><strong>Owner:</strong> {{ note.owner }}</h5>
-        {% endif %}
-        <p>{{ note.content }}</p>
-    </a>
+<div class="note-box" data-note-id="{{ note.id }}" data-url="{{ url_for('edit_note', note_id=note.id) }}">
+    <h3 class="note-box-title">{{ note.title }}</h3>
+    {% if note.owner %}
+    <h5><strong>Owner:</strong> {{ note.owner }}</h5>
+    {% endif %}
+    <p>{{ note.content }}</p>
 
     {% include 'partials/update/tag_list.html' %}
 

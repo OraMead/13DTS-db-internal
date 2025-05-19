@@ -294,3 +294,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// Note box link
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.note-box').forEach(box => {
+        box.addEventListener('click', function (e) {
+            // Prevent navigation if a button or interactive child is clicked
+            if (e.target.closest('button') || e.target.closest('.tag-list') || e.target.closest('.open-modal-btn')) {
+                return;
+            }
+            const url = box.getAttribute('data-url');
+            if (url) {
+                window.location.href = url;
+            }
+        });
+    });
+});

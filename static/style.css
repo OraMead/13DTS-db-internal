@@ -10,10 +10,24 @@ body {
     background-color: #f1f1f1;
 }
 
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overscroll-behavior: none;
+}
+
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
 /* Container */
 .container {
     width: 60vw;
     margin: auto;
+    flex: 1;
 }
 
 .container::after {
@@ -45,6 +59,9 @@ nav {
     padding-top: 0.4rem;
     padding-bottom: 0.7rem;
     border-bottom: 1px solid #b1b1b1;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .navbar-brand {
@@ -76,6 +93,16 @@ nav a {
 
 nav a:hover {
     border-bottom: 3px solid #353535;
+}
+
+/* Footer */
+footer {
+    background-color: #f1f1f1;
+    color: #353535;
+    text-align: center;
+    font-size: 1rem;
+    padding: 1rem 0;
+    border-top: 1px solid #b1b1b1;
 }
 
 /* Note Group and Note Box */

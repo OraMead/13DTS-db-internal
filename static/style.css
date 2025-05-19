@@ -140,6 +140,9 @@ form {
     display: flex;
     flex-direction: column;
     margin-bottom: 1.5rem;
+    padding: 0.7rem;
+    border: 1px solid #ccc;
+    border-radius: 0.4rem;
 }
 
 .form-label {
@@ -149,17 +152,8 @@ form {
 }
 
 .form-element {
-    padding: 0.7rem;
     font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 0.4rem;
-    transition: border-color 0.3s ease;
     box-sizing: border-box;
-}
-
-.form-element:focus {
-    border-color: #4CAF50;
-    outline: none;
 }
 
 .button-group {

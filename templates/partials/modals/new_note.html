@@ -4,7 +4,8 @@
         <h3>New Note</h3>
         <form method="POST" enctype="multipart/form-data" action="/upload">
             <div class="form-group">
-                <input type="text" name="title" placeholder="Untitled Note">
+                <div class="form-label">Title (Max 50 characters)</div>
+                <div class="form-element"><input type="text" name="title" placeholder="Untitled Note" maxlength="50"></div>
             </div>
 
             <div class="form-group">
@@ -18,7 +19,7 @@
                         <option value="add-new">Other</option>
                     </select>
                     <div id="new-subject-container-new-note" style="display: none;">
-                        <input type="text" id="new-subject-new-note" name="new-subject" placeholder="Enter new subject">
+                        <input type="text" id="new-subject-new-note" name="new-subject" placeholder="Enter new subject" maxlength="50">
                     </div>
                 </div>
             </div>

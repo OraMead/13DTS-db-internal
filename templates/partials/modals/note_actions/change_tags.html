@@ -16,9 +16,9 @@
         </div>
 
         <div class="form-group">
-            <div class="form-label">Add New Tag</div>
+            <div class="form-label">Add New Tag (Max 50 characters)</div>
             <div class="form-element">
-                <input type="text" id="new-tag-input-{{ note.id }}" placeholder="Enter new tag name">
+                <input type="text" id="new-tag-input-{{ note.id }}" placeholder="Enter new tag name" maxlength="50">
                 <button class="add-tag-btn" data-note-id="{{ note.id }}">Add Tag</button>
             </div>
         </div>

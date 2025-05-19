@@ -541,7 +541,7 @@ def copy(note_id):
     cur.execute('SELECT * FROM note WHERE note_id=?', (note_id, ))
     note = cur.fetchone()
 
-    cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (session['userid'], note[2], title or f'Copy of {note[3]}'))
+    cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (session['userid'], note[2], title or f'Copy of {note[3]}'[50:]))
     note_id = cur.lastrowid
 
     if copy_tags:

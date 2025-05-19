@@ -3,7 +3,9 @@
     {% for tag in note.tags %}
     <li class="tag-item">
         <span>{{ tag.name }}</span>
+        {% if note.permission == 2 or note.permission is not defined %}
         <button class="remove-tag-btn" data-note-id="{{ note.id }}" data-tag-id="{{ tag.id }}">&times;</button>
+        {% endif %}
     </li>
     {% endfor %}
 </ul>

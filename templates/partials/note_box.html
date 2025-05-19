@@ -11,17 +11,23 @@
 
     <div class="note-actions">
         <button class="open-modal-btn" data-modal="copy-note-modal-{{ note.id }}" title="Copy"><i class="fas fa-copy"></i></button>
-        {% if note.permission == 2 or note.permission is not defined %}
-        <button class="open-modal-btn" data-modal="change-tags-modal-{{ note.id }}" title="Change Tags"><i class="fas fa-tag"></i></button>
+        {% if note.permission == 2 or note.permission is not defined %}        
         <button class="open-modal-btn" data-modal="share-note-modal-{{ note.id }}" title="Share"><i class="fas fa-share-alt"></i></button>
+        {% endif %}
+        {% if note.permission is not defined %}
+        <button class="open-modal-btn" data-modal="change-tags-modal-{{ note.id }}" title="Change Tags"><i class="fas fa-tag"></i></button>
         <button class="open-modal-btn" data-modal="delete-note-modal-{{ note.id }}" title="Delete"><i class="fas fa-trash-alt"></i></button>
-        <button class="open-modal-btn" data-modal="note-options-modal-{{ note.id }}" title="More"><i class="fas fa-ellipsis-v"></i></button>
+        <button class="open-modal-btn" data-modal="note-options-modal-{{ note.id }}" title="More options"><i class="fas fa-ellipsis-v"></i></button>
         {% endif %}
     </div>
 
-    {% include 'partials/modals/note_actions/change_tags.html' %}
-    {% include 'partials/modals/note_actions/share_note.html' %}
     {% include 'partials/modals/note_actions/copy_note.html' %}
-    {% include 'partials/modals/note_actions/delete_note.html' %}
-    {% include 'partials/modals/note_actions/note_options.html' %}
+    {% if note.permission == 2 or note.permission is not defined %}        
+        {% include 'partials/modals/note_actions/share_note.html' %}
+    {% endif %}
+    {% if note.permission is not defined %}
+        {% include 'partials/modals/note_actions/change_tags.html' %}
+        {% include 'partials/modals/note_actions/delete_note.html' %}
+        {% include 'partials/modals/note_actions/note_options.html' %}
+    {% endif %}
 </div> 

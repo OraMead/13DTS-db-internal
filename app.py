@@ -198,7 +198,7 @@ def index():
     Renders the index page
     :return: Rendered index page
     """
-    return render_template('index.html', title='home', logged_in=is_logged_in())
+    return render_template('index.html', title='Home', logged_in=is_logged_in())
 
 
 @app.route('/about')
@@ -207,7 +207,7 @@ def about():
     Renders the about page
     :return: Rendered about page
     """
-    return render_template('about.html', title='about', logged_in=is_logged_in())
+    return render_template('about.html', title='About', logged_in=is_logged_in())
 
 
 @app.route('/dashboard')
@@ -236,12 +236,22 @@ def dashboard():
     tag_list = [{'id': tag[0], 'name': tag[1]} for tag in tag_list]
 
     return render_template('dashboard.html',
-                           title='dashboard',
+                           title='Dashboard',
                            logged_in=is_logged_in(),
                            notes=note_list,
                            shared=shared_list,
                            subjects=subject_list,
                            tags=tag_list)
+
+
+@app.route('/students')
+def students():
+    return render_template('students.html', title='Students', logged_in=is_logged_in())
+
+
+@app.route('/admin')
+def admin():
+    return render_template('admin.html', title='Admin', logged_in=is_logged_in())
 
 
 @app.route('/more/<int:shared>')
@@ -298,11 +308,11 @@ def login():
             role = user_data[0][4]
         except IndexError:
             error = 'Email or password is invalid.'
-            return render_template('login.html', title='login', logged_in=is_logged_in(), error=error, form_data=form_data)
+            return render_template('login.html', title='Login', logged_in=is_logged_in(), error=error, form_data=form_data)
         
         if not bcrypt.check_password_hash(db_password, password):
             error = 'Email or password is invalid.'
-            return render_template('login.html', title='login', logged_in=is_logged_in(), error=error, form_data=form_data)
+            return render_template('login.html', title='Login', logged_in=is_logged_in(), error=error, form_data=form_data)
         
         session['email'] = email
         session['userid'] = userid
@@ -311,7 +321,7 @@ def login():
         session['role'] = role
         return redirect(url_for('index'))
 
-    return render_template('login.html', title='login', logged_in=is_logged_in(), error=error, form_data=form_data)
+    return render_template('login.html', title='Login', logged_in=is_logged_in(), error=error, form_data=form_data)
 
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -343,14 +353,14 @@ def signup():
 
         if password != password2:
             error = "Passwords don't match."
-            return render_template('signup.html', title='signup', logged_in=is_logged_in(),
+            return render_template('signup.html', title='Signup', logged_in=is_logged_in(),
                                    error=error, form_data=form_data)
         
         if role == '2':
             admin_password = request.form.get('admin-password', '')
             if admin_password != ADMIN_PASSWORD:
                 error = "Invalid admin password."
-                return render_template('signup.html', title='signup', logged_in=is_logged_in(),
+                return render_template('signup.html', title='Signup', logged_in=is_logged_in(),
                                        error=error, form_data=form_data)
 
         hashed_password = bcrypt.generate_password_hash(password)
@@ -360,12 +370,12 @@ def signup():
                 (fname, lname, email, hashed_password, role))
         except sqlite3.IntegrityError:
             error = "Email already exists or invalid data."
-            return render_template('signup.html', title='signup', logged_in=is_logged_in(), error=error, form_data=form_data)
+            return render_template('signup.html', title='Signup', logged_in=is_logged_in(), error=error, form_data=form_data)
 
 
         return redirect(url_for('login'))
 
-    return render_template('signup.html', title='signup', logged_in=is_logged_in(), error=error, form_data=form_data)
+    return render_template('signup.html', title='Signup', logged_in=is_logged_in(), error=error, form_data=form_data)
 
 
 @app.route('/logout')
@@ -387,7 +397,7 @@ def account():
     if not is_logged_in():
         return redirect(url_for('index'))
 
-    return render_template('account.html', title='account', logged_in=is_logged_in())
+    return render_template('account.html', title='Account', logged_in=is_logged_in())
 
 
 @app.route('/upload', methods=['POST'])
@@ -541,7 +551,7 @@ def copy(note_id):
     cur.execute('SELECT * FROM note WHERE note_id=?', (note_id, ))
     note = cur.fetchone()
 
-    cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (session['userid'], note[2], title or f'Copy of {note[3]}'[50:]))
+    cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (session['userid'], note[2], title or f'Copy of {note[3]}'[:50]))
     note_id = cur.lastrowid
 
     if copy_tags:
@@ -667,14 +677,9 @@ def note_options(note_id):
 
     cur.execute('SELECT title FROM note WHERE note_id=?', (note_id, ))
     note_data = cur.fetchone()
-    print(note_data)
-
-    print(title)
 
     if not title:
         title = note_data[0]
-    
-    print(title)
 
     if subject == 'add-new' and new_subject:
         cur.execute('INSERT INTO subject (fk_user_id, name) VALUES (?, ?)', (session['userid'], new_subject))

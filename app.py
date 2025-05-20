@@ -63,7 +63,7 @@ SHARED_LIST_QUERY = '''SELECT
                         WHERE sn.fk_user_id = ?
                         ORDER BY n.updated_at DESC;'''
 
-# Temp function for editor
+
 def get_note_content(note_id):
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], f'file_{note_id}.txt')
     if os.path.exists(filepath):
@@ -149,13 +149,7 @@ def process_note(note) -> dict:
     :param note: Tuple from database query
     :return: Dict with named fields
     """
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], f'file_{note[0]}.txt')
-    
-    try:
-        with open(file_path, 'r') as f:
-            content = f.read()
-    except FileNotFoundError:
-        content = ''
+    filepath, content = get_note_content(note[0])
     
     truncated_content = content[:150] + '...' if len(content) > 150 else content
 
@@ -182,6 +176,7 @@ def process_note(note) -> dict:
         'tags': tags,
         'tag_ids': tag_ids,
         'shared': shared,
+        'filepath': filepath,
         'content': truncated_content
     }
 
@@ -514,17 +509,29 @@ def edit_note(note_id):
     """
     if not is_logged_in():
         return redirect(url_for('dashboard'))
+    
     if request.method == 'POST':
         content = request.form['content']
         filepath = request.form['filepath']
         with open(filepath, 'w', encoding='utf-8') as file:
             file.write(content)
-        insert('UPDATE note set updated_at = CURRENT_TIMESTAMP WHERE note_id = ?', (note_id, ))
+
+        insert('UPDATE note SET updated_at=CURRENT_TIMESTAMP WHERE note_id=?', (note_id, ))
         return redirect(url_for('dashboard'))
 
     filepath, content = get_note_content(note_id)
+
+    permission = fetch('SELECT permission FROM shared_note WHERE fk_user_id=? AND fk_note_id=?',
+                       (session['userid'], note_id), False)
+
+    note = {
+        'filepath': filepath,
+        'content': content,
+        'permission': permission[0] if permission else None
+    }
+
     if filepath:
-        return render_template('editor.html', title='Editor', content=content, filepath=filepath, note_id=note_id)
+        return render_template('editor.html', title='Editor', note=note)
     return "File not found", 404
 
 

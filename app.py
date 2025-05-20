@@ -550,19 +550,22 @@ def delete(note_id):
     if not is_logged_in():
         return redirect(url_for('login'))
     
-    owner = fetch("SELECT fk_user_id FROM note WHERE note_id = ?", (note_id,), False)
+    owner = fetch("SELECT fk_user_id FROM note WHERE note_id=?", (note_id,), False)
     if not owner or owner[0] != session['userid']:
         return "Unauthorized", 403
 
+    try:
+        insert('DELETE FROM note_tag WHERE fk_note_id=?', (note_id, ))
+        insert('DELETE FROM note WHERE note_id=?', (note_id, ))
+        insert('DELETE FROM shared_note WHERE fk_note_id=?', (note_id, ))
+    except:
+        return redirect(url_for('dashboard'))
 
-    insert('DELETE FROM note_tag WHERE fk_note_id = ?', (note_id, ))
-    insert('DELETE FROM note WHERE note_id = ?', (note_id, ))
     filename = f'file_{note_id}.txt'
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     if os.path.exists(file_path):
         os.remove(file_path)
         
-
     return redirect(url_for('dashboard'))
 
 

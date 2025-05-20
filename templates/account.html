@@ -6,4 +6,20 @@
 
 {% block main %}
 <strong>Welcome {{ session.firstname }} {{ session.lastname }}</strong>
+
+<div class="button-group">
+    <button class="open-modal-btn" data-modal="change-name-modal">Change Username</button>
+    <button class="open-modal-btn" data-modal="change-email-modal">Change Email</button>
+    <button class="open-modal-btn" data-modal="change-password-modal">Change Password</button>
+    <button class="open-modal-btn" data-modal="change-role-modal">Change Role</button>
+    <button class="open-modal-btn" data-modal="delete-account-modal">Delete Account</button>
+</div>
+
+{% include '/partials/modals/account_actions/change_name.html' %}
+{% include '/partials/modals/account_actions/change_email.html' %}
+{% include '/partials/modals/account_actions/change_password.html' %}
+{% include '/partials/modals/account_actions/change_role.html' %}
+{% include '/partials/modals/account_actions/delete_account.html' %}
+
+<script src="/static/script.js"></script>
 {% endblock %}

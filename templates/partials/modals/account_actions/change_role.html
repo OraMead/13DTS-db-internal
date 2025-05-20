@@ -1,0 +1,30 @@
+<div id="change-role-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h3>Change Role</h3>
+
+        <form method="POST" action="">
+            <div class="form-group">
+                <div class="form-label">Role</div>
+                <div class="form-element">
+                    <select name="role" id="role" required>
+                        <option disabled selected value> -- select an option -- </option>
+                        <option value="0">Student</option>
+                        <option value="1">Teacher</option>
+                        <option value="2">Admin</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" id="admin-password-group" style="display: none;">
+                <div class="form-label">Admin Password</div>
+                <div class="form-element"><input id="admin-password" name="admin-password" type="password"></div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="close-btn">Cancel</button>
+                <button type="submit" class="apply-btn">Apply Changes</button>
+            </div>
+        </form>
+    </div>
+</div>

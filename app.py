@@ -433,6 +433,38 @@ def account():
     return render_template('account.html', title='Account', logged_in=is_logged_in())
 
 
+@app.route('/modify-account/<action>', methods=['POST'])
+def modify_account(action):
+    if not is_logged_in():
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        if action == 'delete':
+            notes = fetch('SELECT note_id FROM note WHERE fk_user_id=?', (session['userid'], ))
+
+            for note_id, in notes:
+                insert('DELETE FROM shared_note WHERE fk_note_id=?', (note_id,))
+                insert('DELETE FROM note_tag WHERE fk_note_id=?', (note_id,))
+                insert('DELETE FROM note WHERE note_id=?', (note_id,))
+
+                filename = f'file_{note_id}.txt'
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+
+            insert('DELETE FROM subject WHERE fk_user_id=?', (session['userid'],))
+            insert('DELETE FROM tag WHERE fk_user_id=?', (session['userid'],))
+            insert('DELETE FROM user WHERE user_id=?', (session['userid'],))
+            
+            [session.pop(key) for key in list(session.keys())]
+            return redirect(url_for('index'))  
+        
+        elif False:
+            pass
+
+    return redirect(url_for('account'))
+
+
 @app.route('/upload', methods=['POST'])
 def upload():
     """
@@ -702,7 +734,8 @@ def search_users():
         for user in users
     ])
 
-@app.route('/note_options/<int:note_id>', methods=['POST'])
+
+@app.route('/note-options/<int:note_id>', methods=['POST'])
 def note_options(note_id):
     title = request.form.get('change-name', '').strip()
     subject = request.form.get('subject')

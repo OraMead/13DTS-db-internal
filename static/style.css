@@ -216,6 +216,16 @@ form {
     line-height: 1.5;
 }
 
+/* Unsaved indicator */
+#unsavedIndicator {
+    font-weight: bold;
+    animation: blink 1s step-start 0s infinite;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
 /* Tag List */
 .tag-list {
     display: flex;

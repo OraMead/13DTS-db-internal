@@ -558,6 +558,7 @@ def edit_note(note_id):
     if not is_logged_in():
         return redirect(url_for('dashboard'))
     
+    title = fetch('SELECT title FROM note WHERE note_id=?', (note_id, ), False)
     if request.method == 'POST':
         content = request.form['content']
         filepath = request.form['filepath']
@@ -573,13 +574,14 @@ def edit_note(note_id):
                        (session['userid'], note_id), False)
 
     note = {
+        'title': title[0],
         'filepath': filepath,
         'content': content,
         'permission': permission[0] if permission else None
     }
 
     if filepath:
-        return render_template('editor.html', title='Editor', note=note)
+        return render_template('editor.html', logged_in=is_logged_in(), title='Editor', note=note)
     return "File not found", 404
 
 

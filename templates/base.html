@@ -20,9 +20,7 @@
                         {% if logged_in %}
                         <a href="{{ url_for('dashboard') }}">Dashboard</a>
                         <a href="{{ url_for('account') }}">Account</a>
-                        {% if session.role==1 %}
-                        <a href="{{ url_for('students') }}">Students</a>
-                        {% elif session.role==2 %}
+                        {% if session.role==2 %}
                         <a href="{{ url_for('admin') }}">Admin</a>
                         {% endif %}
                         <a href="{{ url_for('logout') }}">Logout</a>

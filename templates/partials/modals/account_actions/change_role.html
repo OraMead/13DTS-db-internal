@@ -7,10 +7,11 @@
             <div class="form-group">
                 <div class="form-label">New Role</div>
                 <div class="form-element">
-                    <select name="role" id="role" required>
-                        <option value="0" {% if session.role==0 %}selected{% endif %}>Student</option>
-                        <option value="1" {% if session.role==1 %}selected{% endif %}>Teacher</option>
-                        <option value="2" {% if session.role==2 %}selected{% endif %}>Admin</option>
+                <select name="role" id="role" required>
+                        <option disabled selected value> -- select an option -- </option>
+                        {% if session.role != 0 %}<option value="0">Student</option>{% endif %}
+                        {% if session.role != 1 %}<option value="1">Teacher</option>{% endif %}
+                        {% if session.role != 2 %}<option value="2">Admin</option>{% endif %}
                     </select>
                 </div>
             </div>

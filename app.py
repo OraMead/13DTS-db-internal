@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, url_for, jsonify
+from flask import Flask, render_template, request, redirect, session, url_for, jsonify, flash
 import sqlite3
 from flask_bcrypt import Bcrypt
 import os
@@ -454,8 +454,56 @@ def modify_account(action):
             [session.pop(key) for key in list(session.keys())]
             return redirect(url_for('index'))  
         
-        elif False:
-            pass
+        elif action == 'role':
+            new_role = int(request.form.get('role'))
+
+            if new_role == 2:
+                admin_password = request.form.get('admin-password', '')
+                if admin_password != ADMIN_PASSWORD:
+                    flash('Invalid admin password.', 'error')
+                    return redirect(url_for('account'))
+
+            insert('UPDATE user SET role=? WHERE user_id=?', (new_role, session['userid']))
+            session['role'] = new_role
+            flash('Role updated successfully.', 'success')
+        
+        elif action == 'email':
+            new_email = request.form.get('new-email', '').strip()
+
+            try:
+                insert('UPDATE user SET email=? WHERE user_id=?', (new_email, session['userid']))
+                session['email'] = new_email
+                flash('Email updated successfully.', 'success')
+            except sqlite3.IntegrityError:
+                flash('Email already in use.', 'error')
+        
+        elif action == 'username':
+            new_fname = request.form.get('change-fname', '').strip()
+            new_lname = request.form.get('change-lname', '').strip()
+
+            insert('UPDATE user SET fname=?, lname=? WHERE user_id=?', (new_fname, new_lname, session['userid']))
+            session['firstname'] = new_fname
+            session['lastname'] = new_lname
+            flash('Username updated successfully.', 'success')
+        
+        elif action == 'password':
+            old_password = request.form.get('old-password')
+            new_password = request.form.get('new-password')
+            new_password2 = request.form.get('new-password2')
+
+            db_password = fetch('SELECT password FROM user WHERE user_id=?', (session['userid'], ), False)[0]
+
+            if not bcrypt.check_password_hash(db_password, old_password):
+                flash('Invalid old password.', 'error')
+                return redirect(url_for('account'))
+            
+            if new_password != new_password2:
+                flash("New passwords don't match.", 'error')
+                return redirect(url_for('account'))
+            
+            hashed_password = bcrypt.generate_password_hash(new_password)
+            insert('UPDATE user SET password=? WHERE user_id=?', (hashed_password, session['userid']))
+            flash('Password updated successfully.', 'success')
 
     return redirect(url_for('account'))
 

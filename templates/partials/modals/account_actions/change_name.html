@@ -2,12 +2,16 @@
     <div class="modal-content">
         <span class="close-btn">&times;</span>
         <h3>Change Username</h3>
+        <p><strong>Current username: </strong>{{ session.firstname }} {{ session.lastname }}</p>
 
-        <form method="POST" action="">
+        <form method="POST" action="{{ url_for('modify_account', action='username') }}">
             <div class="form-group">
-                <div class="form-label">Change Name</div>
+                <div class="form-label">New Name</div>
                 <div class="form-element">
-                    <input type="text" id="change-name" name="change-name" placeholder="">
+                    <input type="text" id="change-fname" name="change-fname" placeholder="First Name" maxlength="100" required>
+                </div>
+                <div class="form-element">
+                    <input type="text" id="change-lname" name="change-lname" placeholder="Last Name" maxlength="100" required>
                 </div>
             </div>
 

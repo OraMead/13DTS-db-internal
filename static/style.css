@@ -444,6 +444,7 @@ button:hover {
     background-color: #f0f0f0;
 }
 
+/* Message boxes */
 .error-message {
   background-color: #ffe6e6;
   color: #cc0000;
@@ -454,4 +455,16 @@ button:hover {
   font-weight: 600;
   font-size: 0.95rem;
   box-shadow: 0 1px 3px rgba(204, 0, 0, 0.3);
+}
+
+.success-message {
+  background-color: #e6ffea;
+  color: #006633;
+  border: 1px solid #006633;
+  padding: 10px 15px;
+  margin: 10px 0;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 1px 3px rgba(0, 102, 51, 0.3);
 }

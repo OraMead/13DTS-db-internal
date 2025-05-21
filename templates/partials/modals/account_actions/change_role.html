@@ -3,15 +3,14 @@
         <span class="close-btn">&times;</span>
         <h3>Change Role</h3>
 
-        <form method="POST" action="">
+        <form method="POST" action="{{ url_for('modify_account', action='role') }}">
             <div class="form-group">
-                <div class="form-label">Role</div>
+                <div class="form-label">New Role</div>
                 <div class="form-element">
                     <select name="role" id="role" required>
-                        <option disabled selected value> -- select an option -- </option>
-                        <option value="0">Student</option>
-                        <option value="1">Teacher</option>
-                        <option value="2">Admin</option>
+                        <option value="0" {% if session.role==0 %}selected{% endif %}>Student</option>
+                        <option value="1" {% if session.role==1 %}selected{% endif %}>Teacher</option>
+                        <option value="2" {% if session.role==2 %}selected{% endif %}>Admin</option>
                     </select>
                 </div>
             </div>

@@ -2,12 +2,13 @@
     <div class="modal-content">
         <span class="close-btn">&times;</span>
         <h3>Change Email</h3>
+        <p><strong>Current email: </strong>{{ session.email }}</p>
 
-        <form method="POST" action="">
+        <form method="POST" action="{{ url_for('modify_account', action='email') }}">
             <div class="form-group">
-                <div class="form-label">Change Email</div>
+                <div class="form-label">New Email</div>
                 <div class="form-element">
-                    <input type="email" id="change-name" name="change-name" placeholder="">
+                    <input type="email" id="new-email" name="new-email" placeholder="Enter new email" required maxlength="150">
                 </div>
             </div>
 

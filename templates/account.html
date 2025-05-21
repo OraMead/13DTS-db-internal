@@ -7,12 +7,22 @@
 {% block main %}
 <strong>Welcome {{ session.firstname }} {{ session.lastname }}</strong>
 
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="{{ category}}-message">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endwith %}
+
 <div class="button-group">
     <button class="open-modal-btn" data-modal="change-name-modal">Change Username</button>
     <button class="open-modal-btn" data-modal="change-email-modal">Change Email</button>
     <button class="open-modal-btn" data-modal="change-password-modal">Change Password</button>
     <button class="open-modal-btn" data-modal="change-role-modal">Change Role</button>
-    <button class="open-modal-btn" data-modal="delete-account-modal">Delete Account</button>
+    <button class="open-modal-btn  delete-btn" data-modal="delete-account-modal">Delete Account</button>
 </div>
 
 {% include '/partials/modals/account_actions/change_name.html' %}

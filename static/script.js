@@ -1,23 +1,6 @@
-// Modal popup boxes
-document.querySelectorAll('.open-modal-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const modalId = btn.getAttribute('data-modal');
-        const modal = document.getElementById(modalId);
-        if (modal) modal.style.display = 'block';
-    });
-});
-
-document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal') || e.target.classList.contains('close-btn')) {
-            modal.style.display = 'none';
-        }
-    });
-});
-
-// Modal text inputs
+// DOM loaded content handler
 document.addEventListener('DOMContentLoaded', function () {
-    // Add subject box
+    // Modal text inputs - Add subject box
     document.querySelectorAll('select[id^="subject-select-"]').forEach(select => {
         select.addEventListener('change', function () {
             const suffix = this.id.replace('subject-select-', '');
@@ -32,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Admin password box
+    // Modal text inputs - Admin password box
     const roleSelect = document.getElementById('role');
     const adminPasswordGroup = document.getElementById('admin-password-group');
 
@@ -45,28 +28,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!isAdmin) input.value = '';
         });
     }
-});
 
-
-// Toggle tags
-document.addEventListener('change', function (e) {
-    if (e.target.classList.contains('tag-checkbox')) {
-        const checkbox = e.target;
-        const noteId = checkbox.dataset.noteId;
-        const tagId = checkbox.dataset.tagId;
-        toggleTag(noteId, tagId, checkbox.checked);
-    }
-});
-
-document.addEventListener('click', function (e) {
-    if (e.target.classList.contains('remove-tag-btn')) { // Tags
-        const noteId = e.target.dataset.noteId;
-        const tagId = e.target.dataset.tagId;
-        toggleTag(noteId, tagId, false);
-    }
-});
-
-document.addEventListener('DOMContentLoaded', function () {
+    // Add tag button listeners
     document.querySelectorAll('.add-tag-btn').forEach(button => {
         button.addEventListener('click', function () {
             const noteId = this.dataset.noteId;
@@ -106,6 +69,66 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     });
+
+    // Sharing suggestions dropdown hide
+    document.querySelectorAll('.new-user-id').forEach(input => {
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                const container = input.closest('.add-share-box');
+                const suggestionsList = container.querySelector('.suggestions-list');
+                suggestionsList.style.display = 'none';
+            }, 200);
+        });
+    });
+
+    // Note box link
+    document.querySelectorAll('.note-box').forEach(box => {
+        box.addEventListener('click', function (e) {
+            // Prevent navigation if a button or interactive child is clicked
+            if (e.target.closest('button') || e.target.closest('.tag-list') || e.target.closest('.open-modal-btn') || e.target.closest('.modal')) {
+                return;
+            }
+            const url = box.getAttribute('data-url');
+            if (url) {
+                window.location.href = url;
+            }
+        });
+    });
+});
+
+// Modal popup boxes
+document.querySelectorAll('.open-modal-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const modalId = btn.getAttribute('data-modal');
+        const modal = document.getElementById(modalId);
+        if (modal) modal.style.display = 'block';
+    });
+});
+
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal') || e.target.classList.contains('close-btn')) {
+            modal.style.display = 'none';
+        }
+    });
+});
+
+// Toggle tags
+document.addEventListener('change', function (e) {
+    if (e.target.classList.contains('tag-checkbox')) {
+        const checkbox = e.target;
+        const noteId = checkbox.dataset.noteId;
+        const tagId = checkbox.dataset.tagId;
+        toggleTag(noteId, tagId, checkbox.checked);
+    }
+});
+
+document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('remove-tag-btn')) { // Tags
+        const noteId = e.target.dataset.noteId;
+        const tagId = e.target.dataset.tagId;
+        toggleTag(noteId, tagId, false);
+    }
 });
 
 function toggleTag(noteId, tagId, checked) {
@@ -135,7 +158,9 @@ function toggleTag(noteId, tagId, checked) {
     })
     .catch(error => {
         alert('Failed to update tag: ' + error.message);
-        checkbox.checked = !checked;
+        const modal = document.getElementById(`change-tags-modal-${noteId}`);
+        const checkbox = modal.querySelector(`.tag-checkbox[data-tag-id="${tagId}"]`);
+        if (checkbox) checkbox.checked = !checked;
     });
 }
 
@@ -281,32 +306,4 @@ document.addEventListener('input', async (e) => {
             console.error('Failed to fetch user suggestions:', err);
         }
     }
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.new-user-id').forEach(input => {
-        input.addEventListener('blur', () => {
-            setTimeout(() => {
-                const container = input.closest('.add-share-box');
-                const suggestionsList = container.querySelector('.suggestions-list');
-                suggestionsList.style.display = 'none';
-            }, 200);
-        });
-    });
-});
-
-// Note box link
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.note-box').forEach(box => {
-        box.addEventListener('click', function (e) {
-            // Prevent navigation if a button or interactive child is clicked
-            if (e.target.closest('button') || e.target.closest('.tag-list') || e.target.closest('.open-modal-btn') || e.target.closest('.modal')) {
-                return;
-            }
-            const url = box.getAttribute('data-url');
-            if (url) {
-                window.location.href = url;
-            }
-        });
-    });
 });

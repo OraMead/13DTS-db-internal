@@ -65,6 +65,11 @@ SHARED_LIST_QUERY = '''SELECT
 
 
 def get_note_content(note_id):
+    """
+    Gets the content from the txt file
+    :param note_id: Note ID to read the file for
+    :return: The content of the note as a string
+    """
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], f'file_{note_id}.txt')
     if os.path.exists(filepath):
         with open(filepath, 'r') as file:
@@ -208,16 +213,16 @@ def about():
 @app.route('/dashboard')
 def dashboard():
     """
-    Renders the dashboard page
+    Renders the dashboard page with appropriate values from database
     :return: Rendered dashboard page
     """
     if not is_logged_in():
         return redirect(url_for('index'))
-    
-    note_list = fetch(NOTE_LIST_QUERY, (session['userid'], ))
 
+    # Queries database for required information then formats into dictionaries
+    note_list = fetch(NOTE_LIST_QUERY, (session['userid'], ))
     shared_list = fetch(SHARED_LIST_QUERY, (session['userid'], ))
-    
+
     for i, note in enumerate(note_list):
         note_list[i] = process_note(note)
 
@@ -239,14 +244,12 @@ def dashboard():
                            tags=tag_list)
 
 
-@app.route('/students')
-def students():
-    return render_template('students.html', title='Students', logged_in=is_logged_in())
-
-
 @app.route('/admin')
 def admin():
-
+    """
+    Renders the admin page with appropriate values from database
+    :return: Rendered admin page
+    """
     if not is_logged_in() or session['role'] != 2:
         return redirect(url_for('index'))
     
@@ -284,6 +287,11 @@ def admin():
 
 @app.route('/more/<int:shared>')
 def more(shared):
+    """
+    Renders page of all notes or all shared notes
+    :param shared: Whether to render all shared notes or all notes
+    :return: Rendered page of all notes or all shared notes
+    """
     if shared:
         note_list = fetch(SHARED_LIST_QUERY, (session['userid'], ))
     else:
@@ -400,7 +408,6 @@ def signup():
             error = "Email already exists or invalid data."
             return render_template('signup.html', title='Signup', logged_in=is_logged_in(), error=error, form_data=form_data)
 
-
         return redirect(url_for('login'))
 
     return render_template('signup.html', title='Signup', logged_in=is_logged_in(), error=error, form_data=form_data)
@@ -430,10 +437,16 @@ def account():
 
 @app.route('/modify-account/<action>', methods=['POST'])
 def modify_account(action):
+    """
+    Updates user account information
+    :param action: Which action to perform on user information
+    :return: Redirect after successful action
+    """
     if not is_logged_in():
         return redirect(url_for('index'))
     
     if request.method == 'POST':
+        # Deletes account
         if action == 'delete':
             notes = fetch('SELECT note_id FROM note WHERE fk_user_id=?', (session['userid'], ))
 
@@ -453,7 +466,7 @@ def modify_account(action):
             
             [session.pop(key) for key in list(session.keys())]
             return redirect(url_for('index'))  
-        
+        # Changes user role
         elif action == 'role':
             new_role = int(request.form.get('role'))
 
@@ -466,9 +479,9 @@ def modify_account(action):
             insert('UPDATE user SET role=? WHERE user_id=?', (new_role, session['userid']))
             session['role'] = new_role
             flash('Role updated successfully.', 'success')
-        
+        # Changes user email
         elif action == 'email':
-            new_email = request.form.get('new-email', '').strip()
+            new_email = request.form.get('new-email', '').strip().lower()
 
             try:
                 insert('UPDATE user SET email=? WHERE user_id=?', (new_email, session['userid']))
@@ -476,16 +489,16 @@ def modify_account(action):
                 flash('Email updated successfully.', 'success')
             except sqlite3.IntegrityError:
                 flash('Email already in use.', 'error')
-        
+        # Changes users username
         elif action == 'username':
-            new_fname = request.form.get('change-fname', '').strip()
-            new_lname = request.form.get('change-lname', '').strip()
+            new_fname = request.form.get('change-fname', '').strip().title()
+            new_lname = request.form.get('change-lname', '').strip().title()
 
             insert('UPDATE user SET fname=?, lname=? WHERE user_id=?', (new_fname, new_lname, session['userid']))
             session['firstname'] = new_fname
             session['lastname'] = new_lname
             flash('Username updated successfully.', 'success')
-        
+        # Changes users password
         elif action == 'password':
             old_password = request.form.get('old-password')
             new_password = request.form.get('new-password')
@@ -512,8 +525,11 @@ def modify_account(action):
 def upload():
     """
     Upload file to database
-    :return: Redirect to dashboard page
+    :return: Redirect to dashboard page after upload
     """
+    if not is_logged_in():
+        return redirect(url_for('index'))
+
     title = request.form.get('title', '').strip() or 'Untitled Note'
     file = request.files.get('file')
     subject = request.form.get('subject')
@@ -525,13 +541,16 @@ def upload():
     con = create_connection(DB_PATH)
     cur = con.cursor()
 
+    # Adds new subject if applicable
     if subject == 'add-new' and new_subject:
         cur.execute('INSERT INTO subject (fk_user_id, name) VALUES (?, ?)', (session['userid'], new_subject))
         subject = cur.lastrowid
 
+    # Uploads new note into database
     cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (session['userid'], subject, title))
     note_id = cur.lastrowid
 
+    # Uploads user provided file or creates blank txt file
     if file and file.filename and allowed_file(file.filename):
         ext = file.filename.rsplit('.', 1)[1].lower()
         new_filename = f"file_{note_id}.{ext}"
@@ -556,9 +575,10 @@ def edit_note(note_id):
     :return: Render of editor page
     """
     if not is_logged_in():
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('index'))
     
     title = fetch('SELECT title FROM note WHERE note_id=?', (note_id, ), False)
+    # Save content if form filled out
     if request.method == 'POST':
         content = request.form['content']
         filepath = request.form['filepath']
@@ -568,11 +588,10 @@ def edit_note(note_id):
         insert('UPDATE note SET updated_at=CURRENT_TIMESTAMP WHERE note_id=?', (note_id, ))
         return redirect(url_for('dashboard'))
 
+    # Render edit page with appropriate values
     filepath, content = get_note_content(note_id)
-
     permission = fetch('SELECT permission FROM shared_note WHERE fk_user_id=? AND fk_note_id=?',
                        (session['userid'], note_id), False)
-
     note = {
         'title': title[0],
         'filepath': filepath,
@@ -587,11 +606,17 @@ def edit_note(note_id):
 
 @app.route('/toggle', methods=['POST'])
 def toggle():
+    """
+    Toggle tags applied to a note
+    :return: JSON success confirmation message
+    """
+    # Get note and tag information
     data = request.get_json()
     note_id = data['note_id']
     tag_id = data['tag_id']
     action = data['action']
 
+    # Add or remove tag from note
     if action:
         insert('INSERT OR IGNORE INTO note_tag (fk_note_id, fk_tag_id) VALUES (?, ?)', (note_id, tag_id))
     else:
@@ -602,6 +627,12 @@ def toggle():
 
 @app.route('/process-tags/<int:note_id>')
 def process_tags(note_id):
+    """
+    Render a notes tag list
+    :param note_id: Note id to render tag list for
+    :return: Rendered tag list for specified note
+    """
+    # Gets list of tags and information about note from database
     tag_list = fetch('''SELECT t.tag_id, t.name 
           FROM tag t JOIN note_tag nt ON t.tag_id=nt.fk_tag_id 
           WHERE nt.fk_note_id=? ORDER BY t.tag_id;''',
@@ -611,7 +642,7 @@ def process_tags(note_id):
                     WHERE n.note_id=?''',
                     (note_id, ),
                     False)
-    
+    # Converts information into appropriate information and renders partial
     tag_list = [{'id': tag[0], 'name': tag[1]} for tag in tag_list]
     note_list = {'id': note_list[0], 'subject': note_list[1], 'tags': tag_list}
 
@@ -620,12 +651,17 @@ def process_tags(note_id):
 
 @app.route('/add-tag', methods=['POST'])
 def add_tag():
+    """
+    Creates a new tag if tag doesn't exist
+    :return: JSON response with new tag id and name
+    """
     data = request.get_json()
     tag_name = data.get('tag_name', '').strip()
 
     if not tag_name:
         return jsonify({'success': False, 'error': 'Invalid input'})
 
+    # Add tag if it doesn't already exist
     tag = fetch('SELECT * FROM tag WHERE name=? AND fk_user_id=?', (tag_name, session['userid']), False)
     if not tag:
         insert('INSERT INTO tag (name, fk_user_id) VALUES (?, ?)', (tag_name, session['userid']))
@@ -636,19 +672,23 @@ def add_tag():
 
 @app.route('/delete/<int:note_id>', methods=['POST'])
 def delete(note_id):
+    """
+    Delete a note entry and file
+    :param note_id: Note id to delete
+    :return: redirect to dashboard
+    """
     if not is_logged_in():
         return redirect(url_for('login'))
-    
+
+    # Check if user is owner of note, redirects if not
     owner = fetch("SELECT fk_user_id FROM note WHERE note_id=?", (note_id,), False)
     if not owner or owner[0] != session['userid']:
         return "Unauthorized", 403
 
-    try:
-        insert('DELETE FROM note_tag WHERE fk_note_id=?', (note_id, ))
-        insert('DELETE FROM note WHERE note_id=?', (note_id, ))
-        insert('DELETE FROM shared_note WHERE fk_note_id=?', (note_id, ))
-    except:
-        return redirect(url_for('dashboard'))
+    # Deletes note and file
+    insert('DELETE FROM note_tag WHERE fk_note_id=?', (note_id, ))
+    insert('DELETE FROM note WHERE note_id=?', (note_id, ))
+    insert('DELETE FROM shared_note WHERE fk_note_id=?', (note_id, ))
 
     filename = f'file_{note_id}.txt'
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -660,6 +700,11 @@ def delete(note_id):
 
 @app.route('/copy/<int:note_id>', methods=['POST'])
 def copy(note_id):
+    """
+    Copy a note entry and file
+    :param note_id: Note id to copy
+    :return: redirect to dashboard
+    """
     if not is_logged_in():
         return redirect(url_for('login'))
     
@@ -676,9 +721,11 @@ def copy(note_id):
     cur.execute('SELECT * FROM note WHERE note_id=?', (note_id, ))
     note = cur.fetchone()
 
+    # Copy note information into database with current user as note owner then get the note id
     cur.execute('INSERT INTO note (fk_user_id, fk_subject_id, title) VALUES (?, ?, ?)', (session['userid'], note[2], title or f'Copy of {note[3]}'[:50]))
     note_id = cur.lastrowid
 
+    # Copy tags and shared entries if required
     if copy_tags:
         cur.execute('SELECT * FROM note_tag WHERE fk_note_id=?', (note[0], ))
         tags = cur.fetchall()
@@ -686,9 +733,11 @@ def copy(note_id):
     if copy_shared:
         cur.execute('SELECT * FROM shared_note WHERE fk_note_id=? AND fk_user_id!=?', (note[0], session['userid']))
         shared = cur.fetchall()
+        # Copy original owner in as a managing collaborator
         if note[1] != session['userid']:
             shared.append((note[0], note[1], 2))
 
+    # Copy txt file
     destination = os.path.join(app.config['UPLOAD_FOLDER'], f'file_{note_id}.txt')
     shutil.copyfile(source, destination)
 
@@ -707,14 +756,19 @@ def copy(note_id):
 # Sharing
 @app.route('/modify-share', methods=['POST'])
 def modify_share():
+    """
+    Add, modify, or remove users shared with a note
+    :return: JSON response
+    """
     if not is_logged_in():
         return jsonify({'error': 'Not logged in'}), 400
+
     data = request.get_json()
     user_id = data['user_id']
     note_id = data['note_id']
     action = data['action']
     permission = data.get('permission')
-
+    # Share with new user
     if action == 'share':
         # Prevent sharing with same person twice
         exists = fetch(
@@ -738,12 +792,12 @@ def modify_share():
         insert('INSERT INTO shared_note (fk_user_id, fk_note_id, permission) VALUES (?, ?, ?)',
                (user_id, note_id, permission))
         return '', 204
-    
+    # Update permission
     elif action == 'update':
         insert('UPDATE shared_note SET permission=? WHERE fk_user_id=? AND fk_note_id=?',
                (permission, user_id, note_id))
         return '', 204
-
+    # Remove user from sharing
     elif action == 'unshare':
         insert('DELETE FROM shared_note WHERE fk_user_id=? AND fk_note_id=?',
                (user_id, note_id))
@@ -754,6 +808,12 @@ def modify_share():
 
 @app.route('/process-shared/<int:note_id>')
 def process_shared(note_id):
+    """
+    Refresh the shared list of users for a note.
+    :param note_id: Note id to render shared list for
+    :return: Rendered shared list
+    """
+    # Get needed information and make into dictionary for display
     shared_list = fetch('''SELECT u.user_id, GROUP_CONCAT(u.fname || ' ' || u.lname, '|'), sn.permission
           FROM shared_note sn LEFT JOIN user u ON u.user_id=sn.fk_user_id 
           WHERE sn.fk_note_id=? GROUP BY u.user_id;''',
@@ -767,6 +827,10 @@ def process_shared(note_id):
 
 @app.route('/search-users')
 def search_users():
+    """
+    Search for users with given input in any of their fields
+    :return: JSON response of list of users with user information
+    """
     if not is_logged_in():
         return jsonify({'error': 'Not logged in'}), 400
 
@@ -775,6 +839,7 @@ def search_users():
     if not query:
         return jsonify([])
 
+    # Get all users where query is somewhere in their id, first name, last name, or email
     users = fetch(
         '''SELECT user_id, fname, lname, email FROM user 
            WHERE user_id LIKE ? OR fname LIKE ? OR lname LIKE ? OR email LIKE ?
@@ -794,6 +859,11 @@ def search_users():
 
 @app.route('/note-options/<int:note_id>', methods=['POST'])
 def note_options(note_id):
+    """
+    Rename or change subject of a note.
+    :param note_id:Note to rename or change subject of
+    :return: Redirect to dashboard
+    """
     title = request.form.get('change-name', '').strip()
     subject = request.form.get('subject')
     new_subject = request.form.get('new-subject').strip()
@@ -804,9 +874,10 @@ def note_options(note_id):
     cur.execute('SELECT title FROM note WHERE note_id=?', (note_id, ))
     note_data = cur.fetchone()
 
+    # If no title entered set as current note title
     if not title:
         title = note_data[0]
-
+    # Create new subject if needed
     if subject == 'add-new' and new_subject:
         cur.execute('INSERT INTO subject (fk_user_id, name) VALUES (?, ?)', (session['userid'], new_subject))
         subject = cur.lastrowid

@@ -1,1 +1,0 @@
-DELETE FROM shared_note WHERE fk_note_id=?

@@ -20,6 +20,7 @@
     {% include 'partials/modals/new_note.html' %}
 {% endif %}
 
+<!-- Renders each of the notes if they exist otherwise display none to show -->
 <div class="note-group">
     <div class="notes">
     {% if notes|length != 0 %}
